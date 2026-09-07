@@ -53,3 +53,9 @@ data/
 *.log
 uploads/*
 !uploads/.gitkeep
+
+# Environment / secrets — never commit real credentials
+.env
+.env.production
+.env.local
+.env.*.local
