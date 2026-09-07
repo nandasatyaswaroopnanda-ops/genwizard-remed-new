@@ -591,3 +591,55 @@ def test_end_user_ticket_lifecycle_and_worknotes(client):
     assert unauth_resp.status_code == 403, f"Expected 403 Forbidden, got {unauth_resp.status_code}: {unauth_resp.text}"
 
 
+def test_ad_groups_endpoint_compliance(client):
+    """Verify that /api/id/ad-groups and /api/id/adGroups are 100% compliant with IM specs."""
+    import uuid
+    uid = uuid.uuid4().hex[:6]
+    ad_group_name = f"CN=ADGroup-Compliance-{uid},OU=Groups,DC=corp,DC=internal"
+
+    admin_login = client.post("/api/id/auth/login", json={"username": "admin", "password": "Admin@Secure2026!"})
+    token = admin_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Test POST via /api/id/ad-groups
+    post_resp = client.post(
+        "/api/id/ad-groups",
+        headers=headers,
+        json={
+            "ad_group_name": ad_group_name,
+            "target_role": "itsm_user",
+            "description": "Compliance Test AD Group"
+        }
+    )
+    assert post_resp.status_code in (200, 201), f"POST /ad-groups failed: {post_resp.text}"
+    mapping_data = post_resp.json()
+    mapping_id = mapping_data["id"]
+
+    # 2. Test GET via /api/id/ad-groups and /api/id/adGroups
+    get_hyphen = client.get("/api/id/ad-groups", headers=headers)
+    assert get_hyphen.status_code == 200
+    assert any(m["id"] == mapping_id for m in get_hyphen.json())
+
+    get_camel = client.get("/api/id/adGroups", headers=headers)
+    assert get_camel.status_code == 200
+    assert any(m["id"] == mapping_id for m in get_camel.json())
+
+    # 3. Test PUT via /api/id/ad-groups/{id}
+    put_resp = client.put(
+        f"/api/id/ad-groups/{mapping_id}",
+        headers=headers,
+        json={
+            "ad_group_name": ad_group_name,
+            "target_role": "itsm_admin",
+            "description": "Updated Compliance AD Group"
+        }
+    )
+    assert put_resp.status_code == 200
+    assert put_resp.json()["target_role"] == "itsm_admin"
+
+    # 4. Test DELETE via /api/id/ad-groups/{id}
+    del_resp = client.delete(f"/api/id/ad-groups/{mapping_id}", headers=headers)
+    assert del_resp.status_code == 200
+
+
+

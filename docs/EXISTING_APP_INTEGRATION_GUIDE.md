@@ -64,7 +64,7 @@ In your Identity Management service:
 
 - **Existing Admin User Association**: During installation, the system automatically associates your existing admin user in the existing app (`admin` or username resolved from Consul) with the **`itsm_admin`** group and permissions.
 - **Dynamic Post-Installation DL Mappings**: Rather than enforcing hardcoded AD groups, you can map whatever real AD groups / Distribution Lists (DLs) your organization uses post-installation directly in your existing IM UI:
-  - Go to: `https://<base-url>/identity-management/adGroups`
+  - Go to: `https://<base-url>/identity-management/ad-groups` (or `/adGroups`)
   - Map your corporate DLs (e.g., `L1-Support-Team`, `Cloud-Admins`, `DevOps-Engineers`) to `itsm_user` or `itsm_admin`.
   - Any corporate user not explicitly in a support DL receives the default **`IM_SAML`** end-user group upon SSO login.
 

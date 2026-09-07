@@ -318,7 +318,7 @@ It is ready to be transferred to your target AWS EC2 server where your existing 
 - **Existing IM UI Endpoints & Collections Targeted:**
   - `groups` &rarr; `/identity-management/groups`
   - `permissions` &rarr; `/identity-management/permissions`
-  - `adGroups` &rarr; `/identity-management/adGroups`
+  - `adGroups` / `ad-groups` &rarr; `/identity-management/ad-groups` (or `/adGroups`)
 - **MongoDB Safety:** Operates strictly within isolated database `nexus_itsm` without modifying or affecting your existing MongoDB collections.
 
 ---
@@ -460,7 +460,7 @@ If routing via `atr-gateway-container`, register the route for service name `nex
 1. **Check Existing IM UI:**
    - Navigate to `https://<base-url>/identity-management/groups`: Verify `IM_SAML`, `itsm_admin`, and `itsm_user` are present.
    - Navigate to `https://<base-url>/identity-management/permissions`: Verify `ticket_create`, `ticket_read`, `ticket_update`, `admin_all` are present.
-   - Navigate to `https://<base-url>/identity-management/adGroups`: Verify `ITSM-Admins` and `Service Desk` mappings exist.
+   - Navigate to `https://<base-url>/identity-management/ad-groups` (or `/adGroups`): Verify `ITSM-Admins` and `Service Desk` mappings exist.
 2. **Access ITSM Web App:**
    - Open `https://<base-url>/itsm/` (or direct host port `http://<EC2-IP>:8000`).
    - Notice the sidebar is clean (redundant Identity/Roles/SSO menus removed).

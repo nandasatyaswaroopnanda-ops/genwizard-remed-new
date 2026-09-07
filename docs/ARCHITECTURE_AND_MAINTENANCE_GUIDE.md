@@ -646,4 +646,4 @@ docker exec atr-mongo mongorestore -u atr -p <password> --authenticationDatabase
 
 4. **Issue: End users see administrator navigation items**
    - *Cause:* User's SAML/SSO claims assigned them to a support group.
-   - *Fix:* Check user's assigned DLs in IM (`/identity-management/adGroups`). Remove them from support DLs so they receive the default `IM_SAML` end-user role.
+   - *Fix:* Check user's assigned DLs in IM (`/identity-management/ad-groups` or `/adGroups`). Remove them from support DLs so they receive the default `IM_SAML` end-user role.
