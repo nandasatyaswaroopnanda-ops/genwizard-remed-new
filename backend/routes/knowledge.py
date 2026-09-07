@@ -88,7 +88,7 @@ def create_article(
     """Support members, group managers, and administrators can create knowledge articles. End users are restricted."""
     current_user = get_session_user(db, x_user_id)
     scopes = get_user_scopes(current_user, db)
-    if scopes["is_end_user"] or (current_user.role in ("employee", "im_saml") and not scopes["is_support_member"] and not scopes["is_global_admin"]):
+    if scopes["is_end_user"] or (current_user.role in ("employee", "im_saml", "atr_saml") and not scopes["is_support_member"] and not scopes["is_global_admin"]):
         raise HTTPException(status_code=403, detail="End users have read-only access to the Knowledge Base and cannot create articles")
 
     last_art = db.query(KnowledgeArticle).order_by(desc(KnowledgeArticle.id)).first()
@@ -119,7 +119,7 @@ def update_article(
     """Support members, group managers, and administrators can update knowledge articles. End users are restricted."""
     current_user = get_session_user(db, x_user_id)
     scopes = get_user_scopes(current_user, db)
-    if scopes["is_end_user"] or (current_user.role in ("employee", "im_saml") and not scopes["is_support_member"] and not scopes["is_global_admin"]):
+    if scopes["is_end_user"] or (current_user.role in ("employee", "im_saml", "atr_saml") and not scopes["is_support_member"] and not scopes["is_global_admin"]):
         raise HTTPException(status_code=403, detail="End users have read-only access to the Knowledge Base and cannot update articles")
 
     article = db.query(KnowledgeArticle).filter(KnowledgeArticle.id == article_id).first()
@@ -143,7 +143,7 @@ def delete_article(
     """Support team and admins can delete articles. End users are restricted."""
     current_user = get_session_user(db, x_user_id)
     scopes = get_user_scopes(current_user, db)
-    if scopes["is_end_user"] or (current_user.role in ("employee", "im_saml") and not scopes["is_support_member"] and not scopes["is_global_admin"]):
+    if scopes["is_end_user"] or (current_user.role in ("employee", "im_saml", "atr_saml") and not scopes["is_support_member"] and not scopes["is_global_admin"]):
         raise HTTPException(status_code=403, detail="Support team or administrator role required to delete articles")
 
     article = db.query(KnowledgeArticle).filter(KnowledgeArticle.id == article_id).first()

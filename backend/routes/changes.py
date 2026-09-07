@@ -408,7 +408,8 @@ def add_change_work_note(
     if not chg:
         raise HTTPException(status_code=404, detail="Change request not found")
 
-    if current_user.role in ["employee", "itsm_read"] and chg.requested_by_id != current_user.id:
+    from backend.security import get_user_scopes
+    if (current_user.role in ["employee", "itsm_read", "im_saml", "atr_saml"] or get_user_scopes(current_user, db)["is_end_user"]) and chg.requested_by_id != current_user.id:
         raise HTTPException(status_code=403, detail="Requesters can only update notes on their own change requests")
 
     work_note = TicketWorkNote(

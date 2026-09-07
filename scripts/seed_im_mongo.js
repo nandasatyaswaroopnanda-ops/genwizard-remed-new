@@ -32,6 +32,19 @@ targetDbs.forEach(function(dbName) {
       created_at: new Date()
     },
     {
+      name: "ATR_SAML",
+      description: "Default SSO End-User Group (ATR SAML) for creating tickets, viewing own tickets, updating comments/worknotes, and viewing applications/projects.",
+      permissions: JSON.stringify([
+        "ticket_create",
+        "ticket_read_own",
+        "ticket_update",
+        "applications_read",
+        "projects_read"
+      ]),
+      active: true,
+      created_at: new Date()
+    },
+    {
       name: "itsm_admin",
       description: "ITSM Platform Administrator Group with full management and operational permissions.",
       permissions: JSON.stringify([

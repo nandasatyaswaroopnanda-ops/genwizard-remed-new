@@ -67,6 +67,10 @@ def bootstrap_default_groups():
                 "ticket_create", "ticket_read_own", "ticket_update", "applications_read", "projects_read",
                 "tickets:create", "tickets:read_own", "tickets:update", "applications:read", "projects:read"
             ]),
+            ("ATR_SAML", "Default SSO End-User Group (ATR SAML) for creating tickets, viewing own tickets, updating comments/worknotes, and viewing applications/projects.", [
+                "ticket_create", "ticket_read_own", "ticket_update", "applications_read", "projects_read",
+                "tickets:create", "tickets:read_own", "tickets:update", "applications:read", "projects:read"
+            ]),
             ("itsm_admin", "ITSM Platform Administrator Group with full management and operational permissions.", [
                 "admin_all", "ticket_create", "ticket_read", "ticket_update", "ticket_delete", "ticket_assign", "ticket_resolve", "ticket_close", "admin_routing", "admin_slas", "admin_config", "users_manage", "applications_read", "projects_read",
                 "admin:all", "tickets:create", "tickets:read", "tickets:update", "tickets:delete", "tickets:assign", "tickets:resolve", "tickets:close", "routing:manage", "slas:manage", "config:manage", "users:manage"
@@ -407,7 +411,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     all_perms = set(get_role_permissions(user.role)) | custom_permissions
 
-    is_end_user = (user.role in ["itsm_read", "employee"]) or ("IM_SAML" in custom_groups and user.role not in ["itsm_admin", "administrator", "itsm_user", "support_member", "group_manager"])
+    has_saml_group = any(cg.upper() in ["IM_SAML", "ATR_SAML"] for cg in custom_groups)
+    is_end_user = (user.role in ["itsm_read", "employee", "im_saml", "atr_saml"]) or (has_saml_group and user.role not in ["itsm_admin", "administrator", "itsm_user", "support_member", "group_manager"])
 
     return {
         "access_token": token,
@@ -437,7 +442,8 @@ def get_current_user_profile(user: User = Depends(get_current_identity_user)):
             except Exception:
                 pass
     effective_permissions = sorted(list(set(get_role_permissions(user.role)) | custom_perms))
-    is_end_user = (user.role in ["itsm_read", "employee"]) or ("IM_SAML" in custom_groups and user.role not in ["itsm_admin", "administrator", "itsm_user", "support_member", "group_manager"])
+    has_saml_group = any(cg.upper() in ["IM_SAML", "ATR_SAML"] for cg in custom_groups)
+    is_end_user = (user.role in ["itsm_read", "employee", "im_saml", "atr_saml"]) or (has_saml_group and user.role not in ["itsm_admin", "administrator", "itsm_user", "support_member", "group_manager"])
     
     return {
         "id": user.id,
@@ -981,14 +987,15 @@ def extract_and_map_claims(claims: Dict[str, Any], provider: Optional[SSOProvide
             effective_role = "itsm_read"
         is_end_user = (effective_role not in ["itsm_admin", "administrator", "itsm_user", "support_member", "group_manager"])
     else:
-        # User's groups are not in IM -> default to end-user with IM_SAML
+        # User's groups are not in IM -> default to end-user with IM_SAML / ATR_SAML
         effective_role = "itsm_read"
         is_end_user = True
 
-    # 5. Resolve Custom Groups (Always attach default 'IM_SAML' for SSO users)
+    # 5. Resolve Custom Groups (Always attach default 'IM_SAML' & 'ATR_SAML' for SSO users)
     matched_cg_names = set(matched_ad_custom_group_names)
-    # Always include IM_SAML
+    # Always include both IM_SAML and ATR_SAML
     matched_cg_names.add("IM_SAML")
+    matched_cg_names.add("ATR_SAML")
 
     custom_rules = {}
     if provider and provider.custom_group_mapping_rules:
@@ -1028,36 +1035,41 @@ def extract_and_map_claims(claims: Dict[str, Any], provider: Optional[SSOProvide
             except Exception:
                 pass
 
-    # Ensure IM_SAML is in resolved_custom_groups if it exists in DB
-    im_saml_obj = next((cg for cg in resolved_custom_groups if cg.name == "IM_SAML"), None)
-    if not im_saml_obj:
-        im_saml_db = db.query(CustomGroup).filter(CustomGroup.name == "IM_SAML").first()
-        if not im_saml_db:
-            im_saml_db = CustomGroup(
-                name="IM_SAML",
-                description="Default SSO End-User Group for creating tickets, viewing own tickets, updating comments/worknotes, and viewing applications/projects.",
-                permissions=json.dumps([
-                    "ticket_create",
-                    "ticket_read_own",
-                    "ticket_update",
-                    "applications_read",
-                    "projects_read",
-                    "tickets:create",
-                    "tickets:read_own",
-                    "tickets:update",
-                    "applications:read",
-                    "projects:read"
-                ]),
-                active=True
-            )
-            db.add(im_saml_db)
-            db.commit()
-            db.refresh(im_saml_db)
-        resolved_custom_groups.append(im_saml_db)
-        try:
-            custom_permissions.update(json.loads(im_saml_db.permissions or "[]"))
-        except Exception:
-            pass
+    # Ensure both IM_SAML and ATR_SAML are in resolved_custom_groups if in DB
+    default_saml_defs = [
+        ("IM_SAML", "Default SSO End-User Group for creating tickets, viewing own tickets, updating comments/worknotes, and viewing applications/projects."),
+        ("ATR_SAML", "Default SSO End-User Group (ATR SAML) for creating tickets, viewing own tickets, updating comments/worknotes, and viewing applications/projects.")
+    ]
+    for saml_name, saml_desc in default_saml_defs:
+        saml_obj = next((cg for cg in resolved_custom_groups if cg.name == saml_name), None)
+        if not saml_obj:
+            saml_db = db.query(CustomGroup).filter(CustomGroup.name == saml_name).first()
+            if not saml_db:
+                saml_db = CustomGroup(
+                    name=saml_name,
+                    description=saml_desc,
+                    permissions=json.dumps([
+                        "ticket_create",
+                        "ticket_read_own",
+                        "ticket_update",
+                        "applications_read",
+                        "projects_read",
+                        "tickets:create",
+                        "tickets:read_own",
+                        "tickets:update",
+                        "applications:read",
+                        "projects:read"
+                    ]),
+                    active=True
+                )
+                db.add(saml_db)
+                db.commit()
+                db.refresh(saml_db)
+            resolved_custom_groups.append(saml_db)
+            try:
+                custom_permissions.update(json.loads(saml_db.permissions or "[]"))
+            except Exception:
+                pass
 
     # 6. Resolve Assignment Groups
     # If the user is an end user, they do NOT get assigned to ticket queues (only support teams get queues)

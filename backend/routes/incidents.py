@@ -544,8 +544,9 @@ def add_work_note(
     if not inc:
         raise HTTPException(status_code=404, detail="Incident not found")
 
-    # End users / IM_SAML callers can add notes to their own tickets; support/admin can add to any
-    if current_user.role in ["employee", "itsm_read"] and inc.caller_id != current_user.id:
+    # End users / IM_SAML / ATR_SAML callers can add notes to their own tickets; support/admin can add to any
+    from backend.security import get_user_scopes
+    if (current_user.role in ["employee", "itsm_read", "im_saml", "atr_saml"] or get_user_scopes(current_user, db)["is_end_user"]) and inc.caller_id != current_user.id:
         raise HTTPException(status_code=403, detail="Requesters can only update notes on their own tickets")
 
     work_note = TicketWorkNote(

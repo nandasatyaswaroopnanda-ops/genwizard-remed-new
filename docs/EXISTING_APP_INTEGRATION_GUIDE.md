@@ -59,6 +59,7 @@ In your Identity Management service:
 | **`itsm_user`** | Support Team Fulfiller | `ticket_create`, `ticket_read`, `ticket_update`, `ticket_assign`, `ticket_resolve`, `applications_read`, `projects_read` |
 | **`itsm_read`** | Read-Only Auditor | `ticket_read`, `applications_read`, `projects_read` |
 | **`IM_SAML`** | Default SSO End-User Group | `ticket_create`, `ticket_read_own`, `ticket_update` (comments & worknotes), `applications_read`, `projects_read` |
+| **`ATR_SAML`** | Default SSO End-User Group (ATR SAML — alias for IM_SAML) | Same as `IM_SAML`: `ticket_create`, `ticket_read_own`, `ticket_update`, `applications_read`, `projects_read` |
 
 ### Admin User & Post-Installation DL Configuration:
 
@@ -66,10 +67,10 @@ In your Identity Management service:
 - **Dynamic Post-Installation DL Mappings**: Rather than enforcing hardcoded AD groups, you can map whatever real AD groups / Distribution Lists (DLs) your organization uses post-installation directly in your existing IM UI:
   - Go to: `https://<base-url>/identity-management/ad-groups` (or `/adGroups`)
   - Map your corporate DLs (e.g., `L1-Support-Team`, `Cloud-Admins`, `DevOps-Engineers`) to `itsm_user` or `itsm_admin`.
-  - Any corporate user not explicitly in a support DL receives the default **`IM_SAML`** end-user group upon SSO login.
+  - Any corporate user not explicitly in a support DL receives both the **`IM_SAML`** and **`ATR_SAML`** end-user groups upon SSO login.
 
 > **End-User Experience**:
-> When an employee whose AD groups are not added to a support DL logs in via SSO, they automatically receive the default **`IM_SAML`** group.
+> When an employee whose AD groups are not added to a support DL logs in via SSO, they automatically receive both **`IM_SAML`** and **`ATR_SAML`** groups (whichever your IM platform uses).
 > In the portal, they see only:
 > - **Create Ticket**
 > - **My Tickets** (and can update comments & worknotes)

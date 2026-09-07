@@ -224,14 +224,15 @@ def _ensure_local_persona(user_id: int, db: Session) -> Optional[User]:
     if user and user.username == "john.smith":
         try:
             from backend.models import CustomGroup, UserCustomGroup
-            saml_cg = db.query(CustomGroup).filter(CustomGroup.name == "IM_SAML").first()
-            if not saml_cg:
-                saml_cg = CustomGroup(name="IM_SAML", permissions=json.dumps(["employee"]), active=True)
-                db.add(saml_cg)
-                db.flush()
-            if not db.query(UserCustomGroup).filter(UserCustomGroup.user_id == user.id, UserCustomGroup.custom_group_id == saml_cg.id).first():
-                db.add(UserCustomGroup(user_id=user.id, custom_group_id=saml_cg.id))
-                db.commit()
+            for s_name in ["IM_SAML", "ATR_SAML"]:
+                saml_cg = db.query(CustomGroup).filter(CustomGroup.name == s_name).first()
+                if not saml_cg:
+                    saml_cg = CustomGroup(name=s_name, permissions=json.dumps(["employee"]), active=True)
+                    db.add(saml_cg)
+                    db.flush()
+                if not db.query(UserCustomGroup).filter(UserCustomGroup.user_id == user.id, UserCustomGroup.custom_group_id == saml_cg.id).first():
+                    db.add(UserCustomGroup(user_id=user.id, custom_group_id=saml_cg.id))
+            db.commit()
         except Exception:
             db.rollback()
 
@@ -520,7 +521,7 @@ def get_user_scopes(user: User, db: Optional[Session] = None) -> Dict[str, Any]:
     if is_global_admin or bool(admin_projects):
         is_end_user = False
         is_support_member = True
-    elif getattr(user, "username", "") == "john.smith" or (has_saml_enduser and not has_assignment_group):
+    elif getattr(user, "username", "") == "john.smith" or getattr(user, "role", "") in ["employee", "itsm_read", "im_saml", "atr_saml"] or (has_saml_enduser and not has_assignment_group):
         is_end_user = True
         is_support_member = False
     else:

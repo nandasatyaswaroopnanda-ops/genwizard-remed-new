@@ -569,13 +569,13 @@ async function loadAllUsers() {
 function isUserEndUser(user) {
   if (!user) return false;
   if (user.is_global_admin || user.username === 'admin') return false;
-  if (user.username === 'john.smith' || user.role === 'employee' || user.role === 'itsm_read') return true;
+  if (user.username === 'john.smith' || ['employee', 'itsm_read', 'im_saml', 'atr_saml'].includes(user.role)) return true;
   if (user.is_end_user !== undefined) return Boolean(user.is_end_user);
   if (user.admin_projects && user.admin_projects.length > 0) return false;
   const customGroups = user.custom_groups || [];
   if (customGroups.some(cg => typeof cg === 'string' && (cg.endsWith('-admin') || cg.endsWith('-user')))) return false;
   if (customGroups.some(cg => ['itsm_user', 'Service Desk', 'ITSM-Fulfillers', 'Tier1-Support', 'ITSM-Admins', 'itsm_admin'].includes(cg))) return false;
-  if (customGroups.includes('IM_SAML')) {
+  if (customGroups.some(cg => ['IM_SAML', 'ATR_SAML'].includes(String(cg).toUpperCase()))) {
     const privilegedRoles = ['itsm_admin', 'administrator', 'itsm_user', 'support_member', 'group_manager'];
     if (!privilegedRoles.includes(user.role)) return true;
   }

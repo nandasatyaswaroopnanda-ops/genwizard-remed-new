@@ -93,7 +93,7 @@ Consul Registry:      Connected to existing Consul (${CONSUL_ADDR})
 Docker Network:       ${DOCKER_NETWORK}
 
 PROVISIONED GROUPS & SIMPLIFIED PERMISSIONS:
-  - IM_SAML:          ticket_create, ticket_read_own, ticket_update, applications_read, projects_read
+  - IM_SAML / ATR_SAML: ticket_create, ticket_read_own, ticket_update, applications_read, projects_read
   - itsm_admin:       admin_all, ticket_create, ticket_read, ticket_update, ticket_delete,
                       ticket_assign, ticket_resolve, ticket_close, admin_routing, admin_slas, admin_config
   - itsm_user:        ticket_create, ticket_read, ticket_update, ticket_assign, ticket_resolve

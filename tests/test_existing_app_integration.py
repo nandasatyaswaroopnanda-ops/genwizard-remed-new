@@ -149,6 +149,12 @@ def test_dl_to_group_to_permission_architecture():
         assert "ticket_read_own" in perms_saml
         assert "ticket_update" in perms_saml
 
+        atr_saml = db.query(CustomGroup).filter(CustomGroup.name == "ATR_SAML").first()
+        assert atr_saml is not None
+        perms_atr = json.loads(atr_saml.permissions)
+        assert "ticket_create" in perms_atr
+        assert "ticket_read_own" in perms_atr
+
         itsm_admin_grp = db.query(CustomGroup).filter(CustomGroup.name == "itsm_admin").first()
         assert itsm_admin_grp is not None
         perms_admin = json.loads(itsm_admin_grp.permissions)
@@ -184,7 +190,7 @@ def test_dl_to_group_to_permission_architecture():
         assert "ticket_create" in res_admin["user"]["permissions"]
         assert "admin_all" in res_admin["user"]["permissions"]
 
-        # Test SSO login for end-user (no DL in IM) -> gets IM_SAML
+        # Test SSO login for end-user (no DL in IM) -> gets both IM_SAML and ATR_SAML
         claims_enduser = {
             "email": "employee@corp.local",
             "name": "Standard Employee",
@@ -193,6 +199,7 @@ def test_dl_to_group_to_permission_architecture():
         res_enduser = extract_and_map_claims(claims_enduser, None, db)
         assert res_enduser["user"]["is_end_user"] is True
         assert "IM_SAML" in res_enduser["user"]["custom_groups"]
+        assert "ATR_SAML" in res_enduser["user"]["custom_groups"]
         assert "ticket_create" in res_enduser["user"]["permissions"]
         assert "tickets:create" in res_enduser["user"]["permissions"]
         assert "ticket_read_own" in res_enduser["user"]["permissions"]
@@ -200,3 +207,61 @@ def test_dl_to_group_to_permission_architecture():
         assert "admin:all" not in res_enduser["user"]["permissions"]
     finally:
         db.close()
+
+
+def test_atr_saml_and_im_saml_end_user_parity():
+    """Verify that end users with ATR_SAML, IM_SAML, or both have full behavioral parity."""
+    from backend.security import get_user_scopes
+    db = SessionLocal()
+    try:
+        # 1. User with only ATR_SAML custom group
+        u_atr = User(
+            employee_id="EMP-TEST-ATR-SAML",
+            username="user_atr_only",
+            full_name="User ATR Only",
+            email="atr.only@corp.local",
+            role="employee",
+            is_local=True
+        )
+        db.add(u_atr)
+        db.flush()
+        grp_atr = db.query(CustomGroup).filter(CustomGroup.name == "ATR_SAML").first()
+        from backend.models import UserCustomGroup
+        db.add(UserCustomGroup(user_id=u_atr.id, custom_group_id=grp_atr.id))
+
+        # 2. User with only IM_SAML custom group
+        u_im = User(
+            employee_id="EMP-TEST-IM-SAML",
+            username="user_im_only",
+            full_name="User IM Only",
+            email="im.only@corp.local",
+            role="employee",
+            is_local=True
+        )
+        db.add(u_im)
+        db.flush()
+        grp_im = db.query(CustomGroup).filter(CustomGroup.name == "IM_SAML").first()
+        db.add(UserCustomGroup(user_id=u_im.id, custom_group_id=grp_im.id))
+        db.commit()
+
+        # Both must resolve to is_end_user = True, is_support_member = False
+        scopes_atr = get_user_scopes(u_atr, db)
+        scopes_im = get_user_scopes(u_im, db)
+
+        assert scopes_atr["is_end_user"] is True
+        assert scopes_atr["is_support_member"] is False
+        assert scopes_atr["is_global_admin"] is False
+
+        assert scopes_im["is_end_user"] is True
+        assert scopes_im["is_support_member"] is False
+        assert scopes_im["is_global_admin"] is False
+
+        # Test route guards: end user cannot create knowledge articles
+        res_atr_kb = client.post("/api/knowledge", json={"title": "Test", "content": "Sample"}, headers={"X-User-ID": str(u_atr.id)})
+        assert res_atr_kb.status_code == 403
+
+        res_im_kb = client.post("/api/knowledge", json={"title": "Test", "content": "Sample"}, headers={"X-User-ID": str(u_im.id)})
+        assert res_im_kb.status_code == 403
+    finally:
+        db.close()
+
