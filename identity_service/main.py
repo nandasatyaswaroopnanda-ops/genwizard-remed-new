@@ -647,12 +647,16 @@ def delete_custom_group(group_id: int, db: Session = Depends(get_db)):
 # ── Active Directory (AD) / LDAP Group Mapping ──
 
 @app.get("/ad-mappings")
+@app.get("/ad-groups")
+@app.get("/adGroups")
 def list_ad_mappings(db: Session = Depends(get_db)):
     mappings = db.query(ADGroupMapping).filter(ADGroupMapping.active == True).all()
     return [m.to_dict() for m in mappings]
 
 
 @app.post("/ad-mappings")
+@app.post("/ad-groups")
+@app.post("/adGroups")
 def create_ad_mapping(payload: ADMappingRequest, db: Session = Depends(get_db)):
     existing = db.query(ADGroupMapping).filter(ADGroupMapping.ad_group_name == payload.ad_group_name.strip()).first()
     if existing:
@@ -672,6 +676,8 @@ def create_ad_mapping(payload: ADMappingRequest, db: Session = Depends(get_db)):
 
 
 @app.put("/ad-mappings/{mapping_id}")
+@app.put("/ad-groups/{mapping_id}")
+@app.put("/adGroups/{mapping_id}")
 def update_ad_mapping(mapping_id: int, payload: ADMappingRequest, db: Session = Depends(get_db)):
     mapping = db.get(ADGroupMapping, mapping_id)
     if not mapping:
@@ -686,6 +692,8 @@ def update_ad_mapping(mapping_id: int, payload: ADMappingRequest, db: Session = 
 
 
 @app.delete("/ad-mappings/{mapping_id}")
+@app.delete("/ad-groups/{mapping_id}")
+@app.delete("/adGroups/{mapping_id}")
 def delete_ad_mapping(mapping_id: int, db: Session = Depends(get_db)):
     mapping = db.get(ADGroupMapping, mapping_id)
     if not mapping:
