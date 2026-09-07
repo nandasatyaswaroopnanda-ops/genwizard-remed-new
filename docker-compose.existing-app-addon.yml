@@ -37,8 +37,8 @@ services:
       # Database name inside atr-mongo
       - MONGO_DATABASE=${MONGO_DATABASE:-nexus_itsm}
       
-      # Existing IM container endpoint for API synchronization
-      - IDENTITY_SERVICE_URL=${IDENTITY_SERVICE_URL:-http://identity-management:8001}
+      # Existing IM container endpoint for API synchronization (default: port 8080)
+      - IDENTITY_SERVICE_URL=${IDENTITY_SERVICE_URL:-http://identity-management:8080}
       
       # Subpath hosting prefix
       - ITSM_SUBPATH=/itsm
@@ -66,6 +66,4 @@ volumes:
 networks:
   existing-app-net:
     external: true
-    # Replace with the docker network name of your existing stack:
-    # (Inspect via: docker inspect atr-mongo | grep -i network)
     name: ${EXISTING_DOCKER_NETWORK:-bridge}

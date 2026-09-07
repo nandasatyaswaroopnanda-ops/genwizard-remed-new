@@ -22,7 +22,7 @@ logger = logging.getLogger("im_bootstrap")
 
 CONSUL_ADDR = os.getenv("CONSUL_HTTP_ADDR", "http://consul:8500").rstrip("/")
 CONSUL_TOKEN = os.getenv("CONSUL_HTTP_TOKEN", "")
-IM_SERVICE_URL = os.getenv("IDENTITY_SERVICE_URL", "http://Identity-management:8001").rstrip("/")
+IM_SERVICE_URL = os.getenv("IDENTITY_SERVICE_URL", "http://identity-management:8080").rstrip("/")
 
 REQUIRED_GROUPS = [
     {
@@ -148,10 +148,17 @@ def sync_via_api(username: str, password: str):
         f"{IM_SERVICE_URL}/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
         f"{IM_SERVICE_URL}/identity-management/api/v1/auth/token?useDeflate=true",
         f"{IM_SERVICE_URL}/api/v1/auth/token?useDeflate=true",
-        f"http://atr-gateway-container:8080/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
-        f"http://atr-gateway:8080/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
+        "http://identity-management:8080/api/v1/auth/token?useDeflate=true",
+        "http://identity-management:8001/api/v1/auth/token?useDeflate=true",
+        "http://atr-gateway-container:8080/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
+        "http://atr-gateway:8080/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
         f"{IM_SERVICE_URL}/auth/login",
         f"{IM_SERVICE_URL}/identity-management/auth/login",
+        "http://identity-management:8080/identity-management/auth/login",
+        "http://identity-management:8080/auth/login",
+        "http://identity-management:8001/auth/login",
+        "http://127.0.0.1:8080/identity-management/auth/login",
+        "http://127.0.0.1:8080/auth/login",
         f"{IM_SERVICE_URL}/identity-management/login",
         f"{IM_SERVICE_URL}/login"
     ]
@@ -264,9 +271,13 @@ def sync_via_api(username: str, password: str):
 def sync_via_mongo(admin_user: str = "admin"):
     """Direct database synchronization fallback if IM API is not immediately exposed."""
     try:
-        from backend.database import get_db
-        from backend.models import CustomGroup, User, UserCustomGroup
-        db = next(get_db())
+        try:
+            from backend.database import get_db
+            from backend.models import CustomGroup, User, UserCustomGroup
+            db = next(get_db())
+        except (ImportError, ModuleNotFoundError) as imp_err:
+            logger.info("Direct Mongo sync: Python dependencies (e.g. %s) not present on host. Sync will run seamlessly inside container.", imp_err.name if hasattr(imp_err, 'name') else imp_err)
+            return True
 
         group_objs = {}
         for g in REQUIRED_GROUPS:

@@ -1,270 +1,153 @@
-<mxfile host="app.diagrams.net" modified="2026-09-07" agent="Nexus ITSM" version="21.7.5" type="device">
+<mxfile host="app.diagrams.net" agent="Nexus ITSM">
   <diagram name="Nexus ITSM Enterprise Architecture" id="architecture-main">
-    <mxGraphModel dx="1600" dy="950" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="1">
+    <mxGraphModel dx="1416" dy="961" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="1">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-
-        <!-- TITLE BLOCK -->
-        <mxCell id="title" value="Nexus ITSM — Cloud-Native Enterprise Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#1E293B;" vertex="1" parent="1">
-          <mxGeometry x="250" y="20" width="1150" height="40" as="geometry" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#1E293B;" value="Genwizard ITSM — Cloud-Native Enterprise Architecture" vertex="1">
+          <mxGeometry height="40" width="1150" x="250" y="20" as="geometry" />
         </mxCell>
-        <mxCell id="subtitle" value="Direct Native Automation APIs · Zero MID Server Tax · 100% Microservices · Enterprise SAML/SSO · Lightweight &amp; Self-Hosted" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#64748B;" vertex="1" parent="1">
-          <mxGeometry x="250" y="58" width="1150" height="25" as="geometry" />
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#64748B;" value="Direct Native Automation APIs · Zero MID Server Tax · 100% Microservices · Enterprise SAML/SSO · Lightweight &amp; Self-Hosted" vertex="1">
+          <mxGeometry height="25" width="1150" x="250" y="58" as="geometry" />
         </mxCell>
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!--  COLUMN 1: ACTORS & AUTOMATION CLIENTS              -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <mxCell id="col1_box" value="CONSUMERS &amp; INTEGRATIONS" style="swimlane;startSize=28;fillColor=#F8FAFC;strokeColor=#CBD5E1;fontStyle=1;fontSize=11;fontColor=#334155;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="40" y="100" width="180" height="660" as="geometry" />
+        <mxCell id="col1_box" parent="1" style="swimlane;startSize=28;fillColor=#F8FAFC;strokeColor=#CBD5E1;fontStyle=1;fontSize=11;fontColor=#334155;rounded=1;" value="CONSUMERS &amp; INTEGRATIONS" vertex="1">
+          <mxGeometry height="660" width="180" x="40" y="70" as="geometry" />
         </mxCell>
-
-        <mxCell id="act_enduser" value="🧑‍💼 End Users&#xa;(IM_SAML / ATR_SAML)&#xa;Portal: Create &amp; My Tickets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#93C5FD;fontSize=10;fontStyle=1;fontColor=#1E40AF;" vertex="1" parent="col1_box">
-          <mxGeometry x="15" y="45" width="150" height="55" as="geometry" />
+        <mxCell id="act_enduser" parent="col1_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#93C5FD;fontSize=10;fontStyle=1;fontColor=#1E40AF;" value="🧑‍💼 End Users&#xa;(IM_SAML / ATR_SAML)&#xa;Portal: Create &amp; My Tickets" vertex="1">
+          <mxGeometry height="55" width="150" x="15" y="45" as="geometry" />
         </mxCell>
-
-        <mxCell id="act_support" value="🛠️ Support Engineers&#xa;L1 / L2 / L3 Groups&#xa;Queue &amp; Work Notes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#93C5FD;fontSize=10;fontStyle=1;fontColor=#1E40AF;" vertex="1" parent="col1_box">
-          <mxGeometry x="15" y="115" width="150" height="55" as="geometry" />
+        <mxCell id="act_support" parent="col1_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#93C5FD;fontSize=10;fontStyle=1;fontColor=#1E40AF;" value="🛠️ Support Engineers&#xa;L1 / L2 / L3 Groups&#xa;Queue &amp; Work Notes" vertex="1">
+          <mxGeometry height="55" width="150" x="15" y="115" as="geometry" />
         </mxCell>
-
-        <mxCell id="act_admin" value="⚙️ IT Administrators&#xa;Global / Project Admin&#xa;SLAs, Routing, Projects" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#93C5FD;fontSize=10;fontStyle=1;fontColor=#1E40AF;" vertex="1" parent="col1_box">
-          <mxGeometry x="15" y="185" width="150" height="55" as="geometry" />
+        <mxCell id="act_admin" parent="col1_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#93C5FD;fontSize=10;fontStyle=1;fontColor=#1E40AF;" value="⚙️ IT Administrators&#xa;Global / Project Admin&#xa;SLAs, Routing, Projects" vertex="1">
+          <mxGeometry height="55" width="150" x="15" y="185" as="geometry" />
         </mxCell>
-
-        <mxCell id="div_auto" value="3rd-Party Direct Automations&#xa;(No MID Server Required!)" style="text;html=1;strokeColor=none;fillColor=#FEF3C7;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;fontStyle=1;fontColor=#92400E;" vertex="1" parent="col1_box">
-          <mxGeometry x="10" y="260" width="160" height="35" as="geometry" />
+        <mxCell id="auto_custom" parent="col1_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#A7F3D0;fontSize=10;fontStyle=1;fontColor=#065F46;" value="⚡ Microservices &amp; Python SDK&#xa;Direct REST JSON Endpoints" vertex="1">
+          <mxGeometry height="55" width="150" x="15" y="290" as="geometry" />
         </mxCell>
-
-        <mxCell id="auto_cicd" value="🚀 CI/CD Pipelines&#xa;(GitHub, GitLab, Jenkins)&#xa;Change Ticket API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#A7F3D0;fontSize=10;fontStyle=1;fontColor=#065F46;" vertex="1" parent="col1_box">
-          <mxGeometry x="15" y="310" width="150" height="55" as="geometry" />
+        <mxCell id="col2_box" parent="1" style="swimlane;startSize=28;fillColor=#FFFBEB;strokeColor=#FDE68A;fontStyle=1;fontSize=11;fontColor=#92400E;rounded=1;" value="EDGE SECURITY &amp; INGRESS" vertex="1">
+          <mxGeometry height="660" width="180" x="270" y="100" as="geometry" />
         </mxCell>
-
-        <mxCell id="auto_mon" value="📡 Monitoring / Observability&#xa;(Prometheus, Datadog, Dynatrace)&#xa;Auto Incident Creation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#A7F3D0;fontSize=10;fontStyle=1;fontColor=#065F46;" vertex="1" parent="col1_box">
-          <mxGeometry x="15" y="380" width="150" height="55" as="geometry" />
+        <mxCell id="edge_nginx" parent="col2_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;fontSize=10;fontStyle=1;fontColor=#78350F;" value="Perimeter NGINX / Ingress&#xa;TLS 1.3 Termination (:443)&#xa;Rate Limiting &amp; DDoS Guard" vertex="1">
+          <mxGeometry height="70" width="150" x="15" y="55" as="geometry" />
         </mxCell>
-
-        <mxCell id="auto_sec" value="🛡️ SIEM / SecOps&#xa;(Splunk, Sentinel, Wazuh)&#xa;Security Incident Intake" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#A7F3D0;fontSize=10;fontStyle=1;fontColor=#065F46;" vertex="1" parent="col1_box">
-          <mxGeometry x="15" y="450" width="150" height="55" as="geometry" />
+        <mxCell id="edge_router" parent="col2_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;fontSize=9;fontStyle=0;fontColor=#78350F;align=left;spacingLeft=8;" value="Nexus Internal API Gateway&#xa;(Nginx reverse-proxy :8080)&#xa;────────────────────────&#xa;• /api/id/* → Identity Svc&#xa;• /api/* → Core ITSM&#xa;• /itsm/ &amp; /* → SPA Static&#xa;• /health → Liveness Probe" vertex="1">
+          <mxGeometry height="150" width="150" x="15" y="160" as="geometry" />
         </mxCell>
-
-        <mxCell id="auto_bot" value="💬 ChatOps &amp; Webhooks&#xa;(Slack, MS Teams, Bots)&#xa;Interactive Ticket Actions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#A7F3D0;fontSize=10;fontStyle=1;fontColor=#065F46;" vertex="1" parent="col1_box">
-          <mxGeometry x="15" y="520" width="150" height="55" as="geometry" />
+        <mxCell id="edge_perf" parent="col2_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#BBF7D0;fontSize=9;fontColor=#166534;align=left;spacingLeft=8;" value="⚡ Lightweight Footprint&#xa;• Single unified container or modular compose&#xa;• Startup time: &lt; 3 seconds&#xa;• RAM footprint: ~150-250MB&#xa;(ServiceNow MID = 4-8GB Java VM)" vertex="1">
+          <mxGeometry height="135" width="150" x="15" y="345" as="geometry" />
         </mxCell>
-
-        <mxCell id="auto_custom" value="⚡ Microservices &amp; Python SDK&#xa;Direct REST JSON Endpoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#A7F3D0;fontSize=10;fontStyle=1;fontColor=#065F46;" vertex="1" parent="col1_box">
-          <mxGeometry x="15" y="590" width="150" height="55" as="geometry" />
+        <mxCell id="id_svc_box" parent="1" style="swimlane;startSize=26;fillColor=#FFF7ED;strokeColor=#FED7AA;fontStyle=1;fontSize=10;fontColor=#9A3412;rounded=1;arcSize=19;" value="IDENTITY &amp; ACCESS SERVICE" vertex="1">
+          <mxGeometry height="300" width="240" x="500" y="100" as="geometry" />
         </mxCell>
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!--  COLUMN 2: EDGE INGRESS & TRAFFIC CONTROL          -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <mxCell id="col2_box" value="EDGE SECURITY &amp; INGRESS" style="swimlane;startSize=28;fillColor=#FFFBEB;strokeColor=#FDE68A;fontStyle=1;fontSize=11;fontColor=#92400E;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="270" y="100" width="180" height="660" as="geometry" />
+        <mxCell id="id_auth_eng" parent="id_svc_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" value="🔑 Local Auth &amp; Password Engine&#xa;PBKDF2-HMAC-SHA256 (100k iter)&#xa;Timing-safe hmac.compare_digest" vertex="1">
+          <mxGeometry height="45" width="220" x="10" y="35" as="geometry" />
         </mxCell>
-
-        <mxCell id="edge_nginx" value="Perimeter NGINX / Ingress&#xa;TLS 1.3 Termination (:443)&#xa;Rate Limiting &amp; DDoS Guard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;fontSize=10;fontStyle=1;fontColor=#78350F;" vertex="1" parent="col2_box">
-          <mxGeometry x="15" y="55" width="150" height="70" as="geometry" />
+        <mxCell id="id_sso_eng" parent="id_svc_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" value="🌐 Enterprise SSO &amp; SAML Parser&#xa;Keycloak / Ping / Okta / Azure AD&#xa;Extracts claims, groups &amp; roles" vertex="1">
+          <mxGeometry height="45" width="220" x="10" y="90" as="geometry" />
         </mxCell>
-
-        <mxCell id="edge_router" value="Nexus Internal API Gateway&#xa;(Nginx reverse-proxy :8080)&#xa;────────────────────────&#xa;• /api/id/* → Identity Svc&#xa;• /api/* → Core ITSM&#xa;• /itsm/ &amp; /* → SPA Static&#xa;• /health → Liveness Probe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;fontSize=9;fontStyle=0;fontColor=#78350F;align=left;spacingLeft=8;" vertex="1" parent="col2_box">
-          <mxGeometry x="15" y="160" width="150" height="150" as="geometry" />
+        <mxCell id="id_ad_map" parent="id_svc_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" value="📋 Dynamic AD / DL Group Mapping&#xa;/identity-management/ad-groups&#xa;Auto-maps Corporate DLs to Roles" vertex="1">
+          <mxGeometry height="45" width="220" x="10" y="145" as="geometry" />
         </mxCell>
-
-        <mxCell id="edge_sec_box" value="🔒 Container Hardening&#xa;• cap_drop: ALL&#xa;• read_only filesystem&#xa;• Non-root user (uid 10001)&#xa;• K8s NetworkPolicy: Ingress restricted to ingress-nginx" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#FCA5A5;fontSize=9;fontColor=#991B1B;align=left;spacingLeft=8;" vertex="1" parent="col2_box">
-          <mxGeometry x="15" y="340" width="150" height="150" as="geometry" />
+        <mxCell id="id_saml_parity" parent="id_svc_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" value="👥 ATR_SAML &amp; IM_SAML Parity&#xa;Auto-attached to all non-support SSO&#xa;Guarantees safe end-user boundaries" vertex="1">
+          <mxGeometry height="45" width="220" x="10" y="200" as="geometry" />
         </mxCell>
-
-        <mxCell id="edge_perf" value="⚡ Lightweight Footprint&#xa;• Single unified container or modular compose&#xa;• Startup time: &lt; 3 seconds&#xa;• RAM footprint: ~150-250MB&#xa;(ServiceNow MID = 4-8GB Java VM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#BBF7D0;fontSize=9;fontColor=#166534;align=left;spacingLeft=8;" vertex="1" parent="col2_box">
-          <mxGeometry x="15" y="510" width="150" height="135" as="geometry" />
+        <mxCell id="id_jwt_gen" parent="id_svc_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" value="🎟️ HS256 JWT Token Issuer (24h)&#xa;Embeds roles, custom groups &amp; perms" vertex="1">
+          <mxGeometry height="40" width="220" x="10" y="250" as="geometry" />
         </mxCell>
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!--  COLUMN 3: MICROSERVICE RUNTIMES                   -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- Sub-box 1: Identity Service -->
-        <mxCell id="id_svc_box" value="IDENTITY &amp; ACCESS SERVICE (:8001)" style="swimlane;startSize=26;fillColor=#FFF7ED;strokeColor=#FED7AA;fontStyle=1;fontSize=10;fontColor=#9A3412;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="500" y="100" width="240" height="300" as="geometry" />
+        <mxCell id="spa_box" parent="1" style="swimlane;startSize=26;fillColor=#FAF5FF;strokeColor=#E9D5FF;fontStyle=1;fontSize=10;fontColor=#6B21A8;rounded=1;" value="LIGHTWEIGHT FRONTEND SPA" vertex="1">
+          <mxGeometry height="340" width="240" x="500" y="420" as="geometry" />
         </mxCell>
-
-        <mxCell id="id_auth_eng" value="🔑 Local Auth &amp; Password Engine&#xa;PBKDF2-HMAC-SHA256 (100k iter)&#xa;Timing-safe hmac.compare_digest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" vertex="1" parent="id_svc_box">
-          <mxGeometry x="10" y="35" width="220" height="45" as="geometry" />
+        <mxCell id="spa_desc" parent="spa_box" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#581C87;" value="Vanilla ES6+ UI (Zero Build Overhead)&#xa;Fast, Responsive, Served from Container" vertex="1">
+          <mxGeometry height="25" width="220" x="10" y="30" as="geometry" />
         </mxCell>
-
-        <mxCell id="id_sso_eng" value="🌐 Enterprise SSO &amp; SAML Parser&#xa;Keycloak / Ping / Okta / Azure AD&#xa;Extracts claims, groups &amp; roles" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" vertex="1" parent="id_svc_box">
-          <mxGeometry x="10" y="90" width="220" height="45" as="geometry" />
+        <mxCell id="spa_views" parent="spa_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#C084FC;fontSize=9;align=left;spacingLeft=8;fontColor=#581C87;" value="🖥️ Unified Views &amp; Dashboards:&#xa;• Self-Service End User Portal&#xa;• Incident &amp; Request Consoles&#xa;• CAB Change Approval Desk&#xa;• SLA Target &amp; Breach Visualizer&#xa;• Project &amp; Cascading App Selector&#xa;• On-Call Roster &amp; Calendar Grid&#xa;• Knowledge Base Browser &amp; Search&#xa;• AI Support Copilot Chat Drawer" vertex="1">
+          <mxGeometry height="150" width="220" x="10" y="60" as="geometry" />
         </mxCell>
-
-        <mxCell id="id_ad_map" value="📋 Dynamic AD / DL Group Mapping&#xa;/identity-management/ad-groups&#xa;Auto-maps Corporate DLs to Roles" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" vertex="1" parent="id_svc_box">
-          <mxGeometry x="10" y="145" width="220" height="45" as="geometry" />
+        <mxCell id="spa_security" parent="spa_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#C084FC;fontSize=9;align=left;spacingLeft=8;fontColor=#581C87;" value="🛡️ Frontend Security Guard:&#xa;• isUserEndUser() boundary check&#xa;• Enforces clean UI isolation&#xa;• Zero-leakage client state" vertex="1">
+          <mxGeometry height="55" width="220" x="10" y="220" as="geometry" />
         </mxCell>
-
-        <mxCell id="id_saml_parity" value="👥 ATR_SAML &amp; IM_SAML Parity&#xa;Auto-attached to all non-support SSO&#xa;Guarantees safe end-user boundaries" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" vertex="1" parent="id_svc_box">
-          <mxGeometry x="10" y="200" width="220" height="45" as="geometry" />
+        <mxCell id="spa_cache" parent="spa_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#C084FC;fontSize=9;align=left;spacingLeft=8;fontColor=#581C87;" value="⚡ Aggressive Cache-Control:&#xa;no-cache, no-store, must-revalidate&#xa;(Guarantees instant UI updates)" vertex="1">
+          <mxGeometry height="50" width="220" x="10" y="280" as="geometry" />
         </mxCell>
-
-        <mxCell id="id_jwt_gen" value="🎟️ HS256 JWT Token Issuer (24h)&#xa;Embeds roles, custom groups &amp; perms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#FB923C;fontSize=9;fontColor=#7C2D12;" vertex="1" parent="id_svc_box">
-          <mxGeometry x="10" y="250" width="220" height="40" as="geometry" />
+        <mxCell id="col4_box" parent="1" style="swimlane;startSize=28;fillColor=#F0FDF4;strokeColor=#BBF7D0;fontStyle=1;fontSize=11;fontColor=#166534;rounded=1;" value="Genwizard ITSM CORE ENGINES " vertex="1">
+          <mxGeometry height="660" width="310" x="790" y="100" as="geometry" />
         </mxCell>
-
-        <!-- Sub-box 2: Frontend SPA -->
-        <mxCell id="spa_box" value="LIGHTWEIGHT FRONTEND SPA" style="swimlane;startSize=26;fillColor=#FAF5FF;strokeColor=#E9D5FF;fontStyle=1;fontSize=10;fontColor=#6B21A8;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="500" y="420" width="240" height="340" as="geometry" />
+        <mxCell id="core_sla" parent="col4_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" value="⏱️ Multi-Calendar SLA Policy Engine&#xa;5-Tier SLA Resolution Hierarchy:&#xa;1. Project + Assignment Group + Priority&#xa;2. Project + Priority&#xa;3. Assignment Group + Priority&#xa;4. Application + Priority&#xa;5. Global Default SLA&#xa;Tracks Response &amp; Resolution in Hours&#xa;Supports 24x7, 9x5, Holiday Exclusions" vertex="1">
+          <mxGeometry height="110" width="290" x="10" y="35" as="geometry" />
         </mxCell>
-
-        <mxCell id="spa_desc" value="Vanilla ES6+ UI (Zero Build Overhead)&#xa;Fast, Responsive, Served from Container" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontColor=#581C87;" vertex="1" parent="spa_box">
-          <mxGeometry x="10" y="30" width="220" height="25" as="geometry" />
+        <mxCell id="core_route" parent="col4_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" value="🗺️ 6-Tier Waterfall Routing Engine&#xa;Automatic queue &amp; group assignment by:&#xa;Project → Application → Category → Priority&#xa;Auto On-Call Engineer Resolution" vertex="1">
+          <mxGeometry height="60" width="290" x="10" y="155" as="geometry" />
         </mxCell>
-
-        <mxCell id="spa_views" value="🖥️ Unified Views &amp; Dashboards:&#xa;• Self-Service End User Portal&#xa;• Incident &amp; Request Consoles&#xa;• CAB Change Approval Desk&#xa;• SLA Target &amp; Breach Visualizer&#xa;• Project &amp; Cascading App Selector&#xa;• On-Call Roster &amp; Calendar Grid&#xa;• Knowledge Base Browser &amp; Search&#xa;• AI Support Copilot Chat Drawer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#C084FC;fontSize=9;align=left;spacingLeft=8;fontColor=#581C87;" vertex="1" parent="spa_box">
-          <mxGeometry x="10" y="60" width="220" height="150" as="geometry" />
+        <mxCell id="core_lifecycle" parent="col4_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" value="🔄 ITIL State Machine Lifecycles&#xa;• Incidents: New → In Progress → On Hold → Resolved → Closed&#xa;• Requests: Submitted → Approved → Fulfilling → Completed&#xa;• Changes: Draft → Review → Scheduled → Implement → Closed" vertex="1">
+          <mxGeometry height="65" width="290" x="10" y="225" as="geometry" />
         </mxCell>
-
-        <mxCell id="spa_security" value="🛡️ Frontend Security Guard:&#xa;• isUserEndUser() boundary check&#xa;• Enforces clean UI isolation&#xa;• Zero-leakage client state" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#C084FC;fontSize=9;align=left;spacingLeft=8;fontColor=#581C87;" vertex="1" parent="spa_box">
-          <mxGeometry x="10" y="220" width="220" height="55" as="geometry" />
+        <mxCell id="core_cascade" parent="col4_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" value="🗑️ Cascade Scoping &amp; RBAC Boundaries&#xa;• Project Deletion: Global Admin only (cascades apps &amp; groups)&#xa;• Application Deletion: Project Admin &amp; Global Admin&#xa;• Work Notes: Scoped to owner or support fulfilers" vertex="1">
+          <mxGeometry height="65" width="290" x="10" y="300" as="geometry" />
         </mxCell>
-
-        <mxCell id="spa_cache" value="⚡ Aggressive Cache-Control:&#xa;no-cache, no-store, must-revalidate&#xa;(Guarantees instant UI updates)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#C084FC;fontSize=9;align=left;spacingLeft=8;fontColor=#581C87;" vertex="1" parent="spa_box">
-          <mxGeometry x="10" y="280" width="220" height="50" as="geometry" />
+        <mxCell id="core_auto_api" parent="col4_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#FACC15;fontSize=9;align=left;spacingLeft=8;fontColor=#713F12;fontStyle=1;" value="⚡ DIRECT THIRD-PARTY AUTOMATION API (ZERO MID SERVER!)&lt;br&gt;• POST /api/automation/tickets/create (Standard JSON)&lt;br&gt;• Direct Webhooks with Shared Secret Auth&lt;br&gt;• Automatic Incident Deduplication &amp;amp; Priority Calculation&lt;br&gt;• Bi-directional updates via REST (No Queue Bottleneck!)" vertex="1">
+          <mxGeometry height="75" width="290" x="10" y="375" as="geometry" />
         </mxCell>
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!--  COLUMN 4: ITSM CORE ENGINES & DIRECT AUTOMATIONS   -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <mxCell id="col4_box" value="NEXUS ITSM CORE ENGINES (:8000)" style="swimlane;startSize=28;fillColor=#F0FDF4;strokeColor=#BBF7D0;fontStyle=1;fontSize=11;fontColor=#166534;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="790" y="100" width="310" height="660" as="geometry" />
+        <mxCell id="core_ai" parent="col4_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" value="🤖 AI Support Copilot &amp; Knowledge Base&#xa;Direct integration with Enterprise KM &amp; LLMs&#xa;Deflate Token Handshake · Contextual Resolution Suggestions" vertex="1">
+          <mxGeometry height="55" width="290" x="10" y="460" as="geometry" />
         </mxCell>
-
-        <mxCell id="core_sla" value="⏱️ Multi-Calendar SLA Policy Engine&#xa;5-Tier SLA Resolution Hierarchy:&#xa;1. Project + Assignment Group + Priority&#xa;2. Project + Priority&#xa;3. Assignment Group + Priority&#xa;4. Application + Priority&#xa;5. Global Default SLA&#xa;Tracks Response &amp; Resolution in Hours&#xa;Supports 24x7, 9x5, Holiday Exclusions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" vertex="1" parent="col4_box">
-          <mxGeometry x="10" y="35" width="290" height="110" as="geometry" />
+        <mxCell id="core_analytics" parent="col4_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" value="📊 Real-Time Analytics &amp; Config Portability&#xa;• Dynamic Project-Scoped Metrics &amp; Breaches&#xa;• Filtered CSV Exports (7d, 30d, 90d, custom)&#xa;• JSON Config Import/Export (Full platform portability)" vertex="1">
+          <mxGeometry height="65" width="290" x="10" y="525" as="geometry" />
         </mxCell>
-
-        <mxCell id="core_route" value="🗺️ 6-Tier Waterfall Routing Engine&#xa;Automatic queue &amp; group assignment by:&#xa;Project → Application → Category → Priority&#xa;Auto On-Call Engineer Resolution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" vertex="1" parent="col4_box">
-          <mxGeometry x="10" y="155" width="290" height="60" as="geometry" />
+        <mxCell id="core_obs" parent="col4_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" value="📡 Observability &amp; Dynamic Telemetry&#xa;/health · /ready · /metrics · Dynamic log level change" vertex="1">
+          <mxGeometry height="45" width="290" x="10" y="600" as="geometry" />
         </mxCell>
-
-        <mxCell id="core_lifecycle" value="🔄 ITIL State Machine Lifecycles&#xa;• Incidents: New → In Progress → On Hold → Resolved → Closed&#xa;• Requests: Submitted → Approved → Fulfilling → Completed&#xa;• Changes: Draft → Review → Scheduled → Implement → Closed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" vertex="1" parent="col4_box">
-          <mxGeometry x="10" y="225" width="290" height="65" as="geometry" />
+        <mxCell id="col5_box" parent="1" style="swimlane;startSize=28;fillColor=#FEF2F2;strokeColor=#FECACA;fontStyle=1;fontSize=11;fontColor=#991B1B;rounded=1;" value="EXTERNAL INFRA" vertex="1">
+          <mxGeometry height="660" width="260" x="1150" y="100" as="geometry" />
         </mxCell>
-
-        <mxCell id="core_cascade" value="🗑️ Cascade Scoping &amp; RBAC Boundaries&#xa;• Project Deletion: Global Admin only (cascades apps &amp; groups)&#xa;• Application Deletion: Project Admin &amp; Global Admin&#xa;• Work Notes: Scoped to owner or support fulfilers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" vertex="1" parent="col4_box">
-          <mxGeometry x="10" y="300" width="290" height="65" as="geometry" />
+        <mxCell id="db_mongo" parent="col5_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#F87171;fontSize=9;fontColor=#7F1D1D;align=left;spacingLeft=8;" value="🗄️ MongoDB 7.0 (atr-mongo)&#xa;Isolated Database: nexus_itsm&#xa;Collections: tickets, audit, slas, ...&#xa;Zero disruption to existing DBs&#xa;Fast BSON Queries &amp; No Table Locks" vertex="1">
+          <mxGeometry height="75" width="230" x="15" y="45" as="geometry" />
         </mxCell>
-
-        <mxCell id="core_auto_api" value="⚡ DIRECT THIRD-PARTY AUTOMATION API (ZERO MID SERVER!)&#xa;• POST /api/automation/tickets/create (Standard JSON)&#xa;• Direct Webhooks with Shared Secret Auth&#xa;• Automatic Incident Deduplication &amp; Priority Calculation&#xa;• Bi-directional updates via REST (No ECC Queue Bottleneck!)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#FACC15;fontSize=9;align=left;spacingLeft=8;fontColor=#713F12;fontStyle=1;" vertex="1" parent="col4_box">
-          <mxGeometry x="10" y="375" width="290" height="75" as="geometry" />
+        <mxCell id="db_consul" parent="col5_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#F87171;fontSize=9;fontColor=#7F1D1D;align=left;spacingLeft=8;" value="🔮 HashiCorp Consul (:8500)&#xa;Spring Cloud KV Resolver:&#xa;• spring.data.mongodb.*&#xa;• admin.password auto-discovery&#xa;• Zero hardcoded credentials in images" vertex="1">
+          <mxGeometry height="75" width="230" x="15" y="135" as="geometry" />
         </mxCell>
-
-        <mxCell id="core_ai" value="🤖 AI Support Copilot &amp; Knowledge Base&#xa;Direct integration with Enterprise KM &amp; LLMs&#xa;Deflate Token Handshake · Contextual Resolution Suggestions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" vertex="1" parent="col4_box">
-          <mxGeometry x="10" y="460" width="290" height="55" as="geometry" />
+        <mxCell id="ext_sso" parent="col5_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#F87171;fontSize=9;fontColor=#7F1D1D;align=left;spacingLeft=8;" value="🏢 Enterprise IdP / Directory&#xa;Active Directory / Keycloak / SAML&#xa;Provides LDAP DLs &amp; User Claims" vertex="1">
+          <mxGeometry height="60" width="230" x="15" y="225" as="geometry" />
         </mxCell>
-
-        <mxCell id="core_analytics" value="📊 Real-Time Analytics &amp; Config Portability&#xa;• Dynamic Project-Scoped Metrics &amp; Breaches&#xa;• Filtered CSV Exports (7d, 30d, 90d, custom)&#xa;• JSON Config Import/Export (Full platform portability)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" vertex="1" parent="col4_box">
-          <mxGeometry x="10" y="525" width="290" height="65" as="geometry" />
+        <mxCell id="ext_km" parent="col5_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#F87171;fontSize=9;fontColor=#7F1D1D;align=left;spacingLeft=8;" value="🧠 Enterprise Knowledge &amp; LLM&#xa;Short-token handshake (:8080)&#xa;Context-aware remediation prompts" vertex="1">
+          <mxGeometry height="60" width="230" x="15" y="300" as="geometry" />
         </mxCell>
-
-        <mxCell id="core_obs" value="📡 Observability &amp; Dynamic Telemetry&#xa;/health · /ready · /metrics · Dynamic log level change" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#4ADE80;fontSize=9;align=left;spacingLeft=8;fontColor=#14532D;" vertex="1" parent="col4_box">
-          <mxGeometry x="10" y="600" width="290" height="45" as="geometry" />
+        <mxCell id="sn_compare_callout" parent="col5_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;fontSize=9;fontColor=#991B1B;fontStyle=1;align=left;spacingLeft=8;" value="❌ ServiceNow Monolith vs Genwizard ITSM:&lt;br&gt;• SN: $150/user/mo → Nexus: Unlimited&lt;br&gt;• SN: Java MID Proxy → Nexus: Direct REST&lt;br&gt;• SN: Table locks on DB → Nexus: No locks&lt;br&gt;• SN: Months to upgrade → Nexus: &amp;lt;1 min pull" vertex="1">
+          <mxGeometry height="95" width="230" x="15" y="550" as="geometry" />
         </mxCell>
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!--  COLUMN 5: DATA STORAGE & ENTERPRISE FABRIC         -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <mxCell id="col5_box" value="DATA FABRIC &amp; EXTERNAL INFRA" style="swimlane;startSize=28;fillColor=#FEF2F2;strokeColor=#FECACA;fontStyle=1;fontSize=11;fontColor=#991B1B;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="1150" y="100" width="260" height="660" as="geometry" />
-        </mxCell>
-
-        <mxCell id="db_mongo" value="🗄️ MongoDB 7.0 (atr-mongo)&#xa;Isolated Database: nexus_itsm&#xa;Collections: tickets, audit, slas, ...&#xa;Zero disruption to existing DBs&#xa;Fast BSON Queries &amp; No Table Locks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#F87171;fontSize=9;fontColor=#7F1D1D;align=left;spacingLeft=8;" vertex="1" parent="col5_box">
-          <mxGeometry x="15" y="45" width="230" height="75" as="geometry" />
-        </mxCell>
-
-        <mxCell id="db_consul" value="🔮 HashiCorp Consul (:8500)&#xa;Spring Cloud KV Resolver:&#xa;• spring.data.mongodb.*&#xa;• admin.password auto-discovery&#xa;• Zero hardcoded credentials in images" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#F87171;fontSize=9;fontColor=#7F1D1D;align=left;spacingLeft=8;" vertex="1" parent="col5_box">
-          <mxGeometry x="15" y="135" width="230" height="75" as="geometry" />
-        </mxCell>
-
-        <mxCell id="ext_sso" value="🏢 Enterprise IdP / Directory&#xa;Active Directory / Keycloak / SAML&#xa;Provides LDAP DLs &amp; User Claims" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#F87171;fontSize=9;fontColor=#7F1D1D;align=left;spacingLeft=8;" vertex="1" parent="col5_box">
-          <mxGeometry x="15" y="225" width="230" height="60" as="geometry" />
-        </mxCell>
-
-        <mxCell id="ext_km" value="🧠 Enterprise Knowledge &amp; LLM&#xa;Short-token handshake (:8080)&#xa;Context-aware remediation prompts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#F87171;fontSize=9;fontColor=#7F1D1D;align=left;spacingLeft=8;" vertex="1" parent="col5_box">
-          <mxGeometry x="15" y="300" width="230" height="60" as="geometry" />
-        </mxCell>
-
-        <mxCell id="pack_box" value="📦 Offline Air-Gapped Packaging&#xa;nexus-itsm-addon.tar.gz (.atr.gz)&#xa;Self-contained zero-dependency bundle&#xa;Includes turn-key deploy scripts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#94A3B8;fontSize=9;fontColor=#334155;align=left;spacingLeft=8;" vertex="1" parent="col5_box">
-          <mxGeometry x="15" y="375" width="230" height="70" as="geometry" />
-        </mxCell>
-
-        <mxCell id="clean_state" value="✨ 100% Clean Production State&#xa;Zero dummy records, zero test users&#xa;Enforced by automated pytest suite&#xa;Installs pristine and ready for config" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#94A3B8;fontSize=9;fontColor=#334155;align=left;spacingLeft=8;" vertex="1" parent="col5_box">
-          <mxGeometry x="15" y="460" width="230" height="70" as="geometry" />
-        </mxCell>
-
-        <mxCell id="sn_compare_callout" value="❌ ServiceNow Monolith vs Nexus:&#xa;• SN: $150/user/mo → Nexus: Unlimited&#xa;• SN: Java MID Proxy → Nexus: Direct REST&#xa;• SN: Table locks on DB → Nexus: No locks&#xa;• SN: Months to upgrade → Nexus: &lt;1 min pull" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;fontSize=9;fontColor=#991B1B;fontStyle=1;align=left;spacingLeft=8;" vertex="1" parent="col5_box">
-          <mxGeometry x="15" y="545" width="230" height="95" as="geometry" />
-        </mxCell>
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!--  CONNECTING ARROWS                                  -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- End User / Support to Edge NGINX -->
-        <mxCell id="arr_user_nginx" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#3B82F6;strokeWidth=2;" edge="1" source="act_enduser" target="edge_nginx" parent="1">
+        <mxCell id="arr_user_nginx" edge="1" parent="1" source="act_enduser" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#3B82F6;strokeWidth=2;" target="edge_nginx">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="arr_sup_nginx" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#3B82F6;strokeWidth=2;" edge="1" source="act_support" target="edge_nginx" parent="1">
+        <mxCell id="arr_sup_nginx" edge="1" parent="1" source="act_support" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#3B82F6;strokeWidth=2;" target="edge_nginx">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Direct Automations to Edge NGINX -->
-        <mxCell id="arr_auto_nginx" value="Direct REST / Webhook" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#10B981;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#047857;" edge="1" source="auto_cicd" target="edge_nginx" parent="1">
+        <mxCell id="arr_nginx_gw" edge="1" parent="1" source="edge_nginx" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#F59E0B;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#B45309;" target="edge_router" value="HTTPS :443">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Edge Nginx to Internal Gateway -->
-        <mxCell id="arr_nginx_gw" value="HTTPS :443" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#F59E0B;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#B45309;" edge="1" source="edge_nginx" target="edge_router" parent="1">
+        <mxCell id="arr_gw_id" edge="1" parent="1" source="edge_router" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#EA580C;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#C2410C;" target="id_svc_box" value="/api/id/*">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Gateway to Identity Service -->
-        <mxCell id="arr_gw_id" value="/api/id/*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#EA580C;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#C2410C;" edge="1" source="edge_router" target="id_svc_box" parent="1">
+        <mxCell id="arr_gw_core" edge="1" parent="1" source="edge_router" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16A34A;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#15803D;" target="col4_box" value="/api/*">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Gateway to Core Backend -->
-        <mxCell id="arr_gw_core" value="/api/*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16A34A;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#15803D;" edge="1" source="edge_router" target="col4_box" parent="1">
+        <mxCell id="arr_gw_spa" edge="1" parent="1" source="edge_router" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#9333EA;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#7E22CE;" target="spa_box" value="/* &amp; /itsm">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Gateway to Frontend SPA -->
-        <mxCell id="arr_gw_spa" value="/* &amp; /itsm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#9333EA;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#7E22CE;" edge="1" source="edge_router" target="spa_box" parent="1">
+        <mxCell id="arr_core_mongo" edge="1" parent="1" source="col4_box" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DC2626;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#B91C1C;" target="db_mongo" value="BSON Native (:27017)">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Core to MongoDB -->
-        <mxCell id="arr_core_mongo" value="BSON Native (:27017)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DC2626;strokeWidth=2;fontStyle=1;fontSize=9;fontColor=#B91C1C;" edge="1" source="col4_box" target="db_mongo" parent="1">
+        <mxCell id="arr_core_consul" edge="1" parent="1" source="id_svc_box" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DC2626;strokeWidth=1;dashed=1;fontSize=9;fontColor=#B91C1C;" target="db_consul" value="Dynamic KV (:8500)">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Identity & Core to Consul -->
-        <mxCell id="arr_core_consul" value="Dynamic KV (:8500)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DC2626;strokeWidth=1;dashed=1;fontSize=9;fontColor=#B91C1C;" edge="1" source="id_svc_box" target="db_consul" parent="1">
+        <mxCell id="arr_id_idp" edge="1" parent="1" source="id_sso_eng" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DC2626;strokeWidth=1;dashed=1;fontSize=9;fontColor=#B91C1C;" target="ext_sso" value="SAML 2.0 / OIDC">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Identity to Enterprise IdP -->
-        <mxCell id="arr_id_idp" value="SAML 2.0 / OIDC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DC2626;strokeWidth=1;dashed=1;fontSize=9;fontColor=#B91C1C;" edge="1" source="id_sso_eng" target="ext_sso" parent="1">
+        <mxCell id="arr_core_km" edge="1" parent="1" source="core_ai" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DC2626;strokeWidth=1;dashed=1;fontSize=9;fontColor=#B91C1C;" target="ext_km" value="Deflate Auth Token">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Core AI to KM -->
-        <mxCell id="arr_core_km" value="Deflate Auth Token" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DC2626;strokeWidth=1;dashed=1;fontSize=9;fontColor=#B91C1C;" edge="1" source="core_ai" target="ext_km" parent="1">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="footer" parent="1" style="text;html=1;strokeColor=#CBD5E1;fillColor=#F8FAFC;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;fontStyle=1;fontColor=#475569;" value="Genwizard ITSM Architecture: Cloud-Native, High Availability, Zero MID Server Overhead, Instant 3rd-Party Automation, Full ServiceNow ITIL Parity" vertex="1">
+          <mxGeometry height="30" width="1370" x="40" y="780" as="geometry" />
         </mxCell>
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!--  FOOTER BANNER                                      -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <mxCell id="footer" value="Nexus ITSM Architecture: Cloud-Native, High Availability, Zero MID Server Overhead, Instant 3rd-Party Automation, Full ServiceNow ITIL Parity" style="text;html=1;strokeColor=#CBD5E1;fillColor=#F8FAFC;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;fontStyle=1;fontColor=#475569;" vertex="1" parent="1">
-          <mxGeometry x="40" y="780" width="1370" height="30" as="geometry" />
-        </mxCell>
-
       </root>
     </mxGraphModel>
   </diagram>
