@@ -1,0 +1,18 @@
+{
+  "realm": "itsm",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {"name": "itsm_admin", "description": "Full ITSM administration"},
+      {"name": "itsm_user", "description": "Create and fulfil tickets"},
+      {"name": "itsm_read", "description": "Read-only ITSM access"}
+    ]
+  },
+  "clients": [{
+    "clientId": "nexus-itsm",
+    "publicClient": true,
+    "standardFlowEnabled": true,
+    "redirectUris": ["https://REPLACE_WITH_ITSM_HOST/*"],
+    "webOrigins": ["https://REPLACE_WITH_ITSM_HOST"]
+  }]
+}

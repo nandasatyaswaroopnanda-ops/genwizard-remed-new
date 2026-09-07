@@ -1,0 +1,71 @@
+# ==============================================================================
+# Nexus ITSM Core — Add-on for Existing Application Stack
+# ==============================================================================
+# Use this compose file to spin up nexus-itsm-core alongside your existing:
+# - identity-management (IM backend)
+# - identity-management-client (IM frontend)
+# - nginx (Perimeter proxy)
+# - atr-gateway (API Gateway)
+# - atr-mongo (MongoDB with user 'atr')
+# - consul (HashiCorp Consul configuration registry)
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  nexus-itsm-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nexus-itsm-core:latest
+    container_name: nexus-itsm-core
+    restart: unless-stopped
+    ports:
+      # Host port mapping (change ITSM_HOST_PORT if port 8000 is already in use on your EC2 host).
+      # If using existing Nginx/gateway container reverse proxying via Docker network, this can also be omitted.
+      - "${ITSM_HOST_PORT:-8000}:8000"
+    environment:
+      # Connects to your existing Consul container to read:
+      # 1. configuration/aaam-atr-v3-gateway/spring.data.mongodb.host
+      # 2. configuration/aaam-atr-v3-gateway/spring.data.mongodb.username
+      # 3. configuration/aaam-atr-v3-gateway/spring.data.mongodb.password
+      # 4. configuration/aaam-atr-v3-gateway/spring.data.mongodb.authentication_database
+      # 5. configuration/aaam-atr-v3-gateway/dns
+      - CONSUL_HTTP_ADDR=${CONSUL_HTTP_ADDR:-http://consul:8500}
+      - CONSUL_HTTP_TOKEN=${CONSUL_HTTP_TOKEN:-}
+      
+      # Database name inside atr-mongo
+      - MONGO_DATABASE=${MONGO_DATABASE:-nexus_itsm}
+      
+      # Existing IM container endpoint for API synchronization
+      - IDENTITY_SERVICE_URL=${IDENTITY_SERVICE_URL:-http://identity-management:8001}
+      
+      # Subpath hosting prefix
+      - ITSM_SUBPATH=/itsm
+      
+      # Platform admin bootstrap fallback (if consul key is not populated)
+      - ITSM_BOOTSTRAP_ADMIN_USERNAME=admin
+      
+      # AI Copilot / Knowledge Engine token
+      - KM_API_TOKEN=${KM_API_TOKEN:-local_demo_token}
+    volumes:
+      - itsm-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - existing-app-net
+
+volumes:
+  itsm-uploads:
+    name: nexus-itsm-uploads
+
+networks:
+  existing-app-net:
+    external: true
+    # Replace with the docker network name of your existing stack:
+    # (Inspect via: docker inspect atr-mongo | grep -i network)
+    name: ${EXISTING_DOCKER_NETWORK:-bridge}

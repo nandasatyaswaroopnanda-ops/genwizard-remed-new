@@ -1,0 +1,403 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nexus-itsm
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nexus-itsm
+  namespace: nexus-itsm
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexus-itsm-config
+  namespace: nexus-itsm
+data:
+  APP_HOST: "itsm.local"
+  APP_URL: "http://itsm.local"
+  MONGO_DATABASE: "nexus_itsm"
+  MONGO_URL: "mongodb://mongo-atr:REPLACE_MONGO_PASSWORD@mongo:27017/nexus_itsm?authSource=admin"
+  CONSUL_HTTP_ADDR: "http://consul:8500"
+  ACCENTURE_EMAIL_DOMAIN: "company.local"
+  KEYCLOAK_CLIENT_ID: "nexus-itsm"
+  BACKEND_HOST: "nexus-backend"
+  BACKEND_PORT: "8000"
+  IDENTITY_HOST: "nexus-identity"
+  IDENTITY_PORT: "8001"
+  IDENTITY_SERVICE_URL: "http://nexus-identity:8001"
+  GATEWAY_HOST: "nexus-gateway"
+  GATEWAY_PORT: "8080"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nexus-itsm-secrets
+  namespace: nexus-itsm
+type: Opaque
+stringData:
+  ITSM_BOOTSTRAP_ADMIN_USERNAME: "admin"
+  ITSM_BOOTSTRAP_ADMIN_PASSWORD: "REPLACE_ADMIN_PASSWORD"
+  MONGO_INITDB_ROOT_USERNAME: "mongo-atr"
+  MONGO_INITDB_ROOT_PASSWORD: "REPLACE_MONGO_PASSWORD"
+  CONSUL_HTTP_TOKEN: ""
+  KM_API_TOKEN: "REPLACE_KM_TOKEN"
+---
+# ─────────────────────────────────────────────────────────────
+# HashiCorp Consul Service
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consul
+  namespace: nexus-itsm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: consul
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: consul
+    spec:
+      containers:
+        - name: consul
+          image: hashicorp/consul:1.19
+          args: ["agent", "-dev", "-client=0.0.0.0"]
+          ports:
+            - name: http
+              containerPort: 8500
+          readinessProbe:
+            httpGet: { path: /v1/status/leader, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: consul
+  namespace: nexus-itsm
+spec:
+  selector:
+    app.kubernetes.io/name: consul
+  ports:
+    - name: http
+      port: 8500
+      targetPort: http
+---
+# ─────────────────────────────────────────────────────────────
+# MongoDB Database
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: nexus-itsm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mongo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7.0
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: nexus-itsm-secrets
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nexus-itsm-secrets
+                  key: MONGO_INITDB_ROOT_PASSWORD
+          ports:
+            - name: mongodb
+              containerPort: 27017
+          resources:
+            requests: { cpu: 200m, memory: 256Mi }
+            limits: { cpu: "1", memory: 512Mi }
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+      volumes:
+        - name: mongo-storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: nexus-itsm
+spec:
+  selector:
+    app.kubernetes.io/name: mongo
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: mongodb
+---
+# ─────────────────────────────────────────────────────────────
+# Identity Management Microservice
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus-identity
+  namespace: nexus-itsm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nexus-identity
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nexus-identity
+    spec:
+      serviceAccountName: nexus-itsm
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+        - name: identity-service
+          image: nexus-identity:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: nexus-itsm-config
+            - secretRef:
+                name: nexus-itsm-secrets
+          resources:
+            requests: { cpu: 150m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 20
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus-identity
+  namespace: nexus-itsm
+spec:
+  selector:
+    app.kubernetes.io/name: nexus-identity
+  ports:
+    - name: http
+      port: 8001
+      targetPort: http
+---
+# ─────────────────────────────────────────────────────────────
+# Core ITSM Backend Service
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus-backend
+  namespace: nexus-itsm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nexus-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nexus-backend
+    spec:
+      serviceAccountName: nexus-itsm
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+        - name: backend-service
+          image: nexus-itsm:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: nexus-itsm-config
+            - secretRef:
+                name: nexus-itsm-secrets
+          resources:
+            requests: { cpu: 250m, memory: 256Mi }
+            limits: { cpu: "1", memory: 512Mi }
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 20
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: uploads
+              mountPath: /app/uploads
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: uploads
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus-backend
+  namespace: nexus-itsm
+spec:
+  selector:
+    app.kubernetes.io/name: nexus-backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+# ─────────────────────────────────────────────────────────────
+# Nginx Gateway & Reverse Proxy
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus-gateway
+  namespace: nexus-itsm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nexus-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nexus-gateway
+    spec:
+      containers:
+        - name: gateway
+          image: nexus-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: nexus-itsm-config
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { cpu: 300m, memory: 128Mi }
+          readinessProbe:
+            tcpSocket: { port: http }
+            initialDelaySeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus-gateway
+  namespace: nexus-itsm
+spec:
+  selector:
+    app.kubernetes.io/name: nexus-gateway
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+# ─────────────────────────────────────────────────────────────
+# Edge Nginx Reverse Proxy & Redirect Manager
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus-nginx
+  namespace: nexus-itsm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nexus-nginx
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nexus-nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nexus-nginx:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: nexus-itsm-config
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 64Mi }
+          readinessProbe:
+            httpGet: { path: /edge-health, port: http }
+            initialDelaySeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus-nginx
+  namespace: nexus-itsm
+spec:
+  selector:
+    app.kubernetes.io/name: nexus-nginx
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# ─────────────────────────────────────────────────────────────
+# Kubernetes Ingress
+# ─────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nexus-itsm-ingress
+  namespace: nexus-itsm
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  rules:
+    - host: itsm.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nexus-nginx
+                port:
+                  number: 80

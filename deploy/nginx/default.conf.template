@@ -1,0 +1,93 @@
+# ==============================================================================
+# Nexus ITSM — Internal API Gateway
+# Dispatches incoming requests from Edge Nginx to downstream microservices:
+# - Identity Management Service (/api/id/*)
+# - Core ITSM Backend Service (/api/*, /docs, /openapi.json)
+# - Frontend SPA static assets (/*)
+# ==============================================================================
+
+upstream identity_service {
+    server ${IDENTITY_HOST:-nexus-identity}:${IDENTITY_PORT:-8001};
+    keepalive 32;
+}
+
+upstream backend_service {
+    server ${BACKEND_HOST:-nexus-itsm}:${BACKEND_PORT:-8000};
+    keepalive 32;
+}
+
+server {
+    listen 8080;
+    server_name ${APP_HOST:-localhost};
+    server_tokens off;
+    client_max_body_size 50m;
+
+    # Gateway Health Probe
+    location /gateway-health {
+        access_log off;
+        default_type application/json;
+        return 200 '{"status":"healthy","service":"api-gateway"}';
+    }
+
+    # Identity Management Service documentation
+    location /api/id/docs {
+        proxy_pass http://identity_service/docs;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api/id/openapi.json {
+        proxy_pass http://identity_service/openapi.json;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Identity Management Service API
+    location /api/id/ {
+        proxy_pass http://identity_service/;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # Core ITSM Backend API and Swagger Documentation
+    location /docs {
+        proxy_pass http://backend_service/docs;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /openapi.json {
+        proxy_pass http://backend_service/openapi.json;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Default / Frontend SPA and Core APIs
+    location / {
+        proxy_pass http://backend_service;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+}

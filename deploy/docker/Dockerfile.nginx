@@ -1,0 +1,12 @@
+FROM nginx:1.27-alpine
+
+COPY deploy/nginx/nginx-edge.conf.template /etc/nginx/templates/default.conf.template
+
+ENV APP_HOST=localhost \
+    GATEWAY_HOST=gateway \
+    GATEWAY_PORT=8080
+
+EXPOSE 80 443
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
+    CMD nc -z 127.0.0.1 80 || exit 1

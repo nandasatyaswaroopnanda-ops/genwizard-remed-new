@@ -1,0 +1,14 @@
+FROM nginx:1.27-alpine
+
+COPY deploy/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+
+ENV APP_HOST=localhost \
+    BACKEND_HOST=nexus-itsm \
+    BACKEND_PORT=8000 \
+    IDENTITY_HOST=nexus-identity \
+    IDENTITY_PORT=8001
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
+    CMD nc -z 127.0.0.1 8080 || exit 1

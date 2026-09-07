@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>GenWizard Support Portal</title>
+  <!-- Local Vendor Libraries: works in file://, http://localhost:8000/, and http://localhost:8000/itsm/ -->
+  <script src="vendor/tailwind.js"></script>
+  <script src="vendor/chart.umd.min.js"></script>
+  <script src="vendor/lucide.min.js"></script>
+  <script src="vendor/marked.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    function safeRenderIcons() {
+      try {
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      } catch (e) {
+        console.warn('Lucide icon render error:', e);
+      }
+    }
+  </script>
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      darkMode: ['class', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#faf5ff',
+              100: '#f3e8ff',
+              200: '#e9d5ff',
+              300: '#d8b4fe',
+              400: '#c084fc',
+              500: '#a855f7',
+              600: '#9333ea',
+              700: '#7e22ce',
+              800: '#6b21a8',
+              900: '#581c87',
+              accenture: '#a100ff',
+            }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="min-h-screen flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]">
+
+  <!-- TOP APP BAR -->
+  <header class="h-16 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+    <!-- Brand / Accenture Logo & GenWizard Support Portal Heading -->
+    <div class="flex items-center space-x-3.5">
+      <!-- Genwizard with Accenture Symbol Logo -->
+      <div class="flex items-center space-x-2 bg-gradient-to-r from-purple-900 via-purple-950 to-indigo-950 px-3.5 py-1.5 rounded-xl border border-purple-800/70 shadow-sm">
+        <svg class="h-6 w-auto" viewBox="0 0 155 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Genwizard Wordmark in crisp white -->
+          <text x="0" y="26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="23" fill="#ffffff" letter-spacing="-0.5">Genwizard</text>
+          <!-- Iconic Accenture Purple Chevron '>' Symbol -->
+          <path d="M124 9 L136 18 L124 27" stroke="#a100ff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </div>
+
+      <!-- Vertical Divider -->
+      <div class="h-7 w-[1.5px] bg-purple-300 dark:bg-purple-800"></div>
+
+      <!-- Main Portal Heading -->
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="font-black text-lg md:text-xl tracking-tight bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-700 bg-clip-text text-transparent">
+            GenWizard Support Portal
+          </h1>
+          <span class="text-[10px] uppercase tracking-wider font-bold text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 border border-purple-200 dark:border-purple-800">
+            Enterprise ITSM
+          </span>
+        </div>
+        <p class="text-[10px] text-slate-500 dark:text-purple-300/80 font-semibold hidden sm:block">
+          Genwizard Intelligent Support Operations & Control Plane
+        </p>
+      </div>
+    </div>
+
+    <!-- Global Search Bar -->
+    <div class="flex-1 max-w-xl mx-6 relative hidden md:block">
+      <i data-lucide="search" class="w-4 h-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+      <input
+        type="text"
+        id="globalSearchInput"
+        placeholder="Search tickets, incidents, runbooks, or knowledge..."
+        class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-all placeholder:text-slate-400"
+      />
+      <div id="searchDropdown" class="hidden absolute top-12 left-0 right-0 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 max-h-80 overflow-y-auto p-2"></div>
+    </div>
+
+    <!-- Quick Actions & User Switcher -->
+    <div class="flex items-center space-x-2.5">
+      <!-- Backend Connection Status Indicator -->
+      <div id="backendStatusBadge" class="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold">
+        <span id="backendStatusDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="backendStatusText">Backend Online</span>
+      </div>
+
+      <!-- Create Ticket Action -->
+      <button onclick="openCreateModal()" class="flex items-center space-x-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all hover:shadow-purple-500/20">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        <span>Create Ticket</span>
+      </button>
+
+      <!-- Persona / User Switcher -->
+      <div class="relative">
+        <div id="userSwitcherBtn" onclick="toggleUserDropdown()" class="flex items-center space-x-2 bg-[var(--bg-tertiary)] hover:bg-purple-100 dark:hover:bg-purple-950 border border-[var(--border-color)] px-2.5 py-1.5 rounded-xl cursor-pointer transition-all">
+          <div id="userAvatar" class="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white text-xs font-bold flex items-center justify-center">AU</div>
+          <div class="text-left leading-tight hidden sm:block">
+            <div id="userName" class="text-xs font-bold text-[var(--text-primary)]">Admin User</div>
+            <div id="userRoleBadge" class="hidden"></div>
+          </div>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-purple-400"></i>
+        </div>
+        <!-- User Dropdown Menu -->
+        <div id="userDropdown" class="hidden absolute right-0 mt-2 w-72 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 p-2 text-xs">
+          <div class="px-3 py-2 text-[10px] font-bold text-purple-500 uppercase tracking-wider border-b border-[var(--border-color)]">
+            Switch User Profile
+          </div>
+          <div id="usersListContainer" class="divide-y divide-[var(--border-color)]"></div>
+        </div>
+      </div>
+
+      <!-- Notifications Bell -->
+      <div class="relative">
+        <button onclick="toggleNotificationPanel()" class="p-2 rounded-xl hover:bg-[var(--bg-tertiary)] border border-[var(--border-color)] relative text-purple-600 dark:text-purple-400">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+          <span id="unreadCountBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+        </button>
+        <div id="notificationPanel" class="hidden absolute right-0 mt-2 w-80 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 p-3">
+          <div class="flex items-center justify-between pb-2 border-b border-[var(--border-color)] mb-2">
+            <span class="font-bold text-xs">Notifications</span>
+            <button onclick="markAllNotificationsRead()" class="text-xs text-purple-600 hover:underline">Mark all read</button>
+          </div>
+          <div id="notificationsContainer" class="space-y-2 max-h-72 overflow-y-auto text-xs"></div>
+        </div>
+      </div>
+
+      <!-- Theme Toggle (Dark/Light) -->
+      <button onclick="toggleTheme()" class="p-2 rounded-xl hover:bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-purple-600 dark:text-purple-400" title="Toggle Dark/Light Mode">
+        <i data-lucide="moon" id="themeIcon" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER: SIDEBAR + CONTENT -->
+  <div class="flex flex-1 overflow-hidden">
+    <!-- LEFT NAVIGATION -->
+    <aside class="w-64 border-r border-[var(--border-color)] bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] flex flex-col justify-between flex-shrink-0 select-none">
+      <div class="py-4 px-3 space-y-6 overflow-y-auto">
+
+        <!-- Portal Header Brand Badge in Sidebar -->
+        <div class="px-3 py-2 rounded-xl bg-purple-950/40 border border-purple-900/50 flex items-center space-x-2.5">
+          <div class="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-sm shadow-purple-400/50 animate-pulse"></div>
+          <div id="sidebarPortalName" class="text-xs font-bold text-purple-200 truncate">GenWizard Portal</div>
+        </div>
+
+        <!-- Sidebar Create Ticket Action -->
+        <div id="sidebarCreateTicketSection" class="px-1">
+          <button onclick="openCreateModal()" class="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-3.5 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-all hover:shadow-purple-500/20">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Create Ticket</span>
+          </button>
+        </div>
+
+        <!-- Operations Section -->
+        <div id="navSectionOperations">
+          <div id="navHeadingOperations" class="px-3 text-[10px] font-bold uppercase tracking-wider text-purple-300/60 mb-2">IT Operations</div>
+          <nav class="space-y-1 text-xs font-semibold">
+            <a id="navItemDashboard" href="#/dashboard" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="dashboard">
+              <i data-lucide="layout-dashboard" class="w-4 h-4 text-purple-400"></i>
+              <span>Dashboard</span>
+            </a>
+            <a id="navItemMyTickets" href="#/my-tickets" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="my-tickets">
+              <i data-lucide="inbox" class="w-4 h-4 text-purple-400"></i>
+              <span>My Tickets</span>
+            </a>
+            <a id="navItemAllTickets" href="#/tickets" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="tickets">
+              <i data-lucide="layers" class="w-4 h-4 text-purple-400"></i>
+              <span>All Tickets</span>
+            </a>
+            <a id="navItemIncidents" href="#/incidents" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="incidents">
+              <i data-lucide="alert-octagon" class="w-4 h-4 text-red-400"></i>
+              <span>Incidents</span>
+            </a>
+            <a id="navItemRequests" href="#/service-requests" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="service-requests">
+              <i data-lucide="ticket" class="w-4 h-4 text-amber-400"></i>
+              <span>Service Requests</span>
+            </a>
+            <a id="navItemChanges" href="#/changes" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="changes">
+              <i data-lucide="git-pull-request" class="w-4 h-4 text-emerald-400"></i>
+              <span>Change Requests</span>
+            </a>
+            <a id="navItemKnowledge" href="#/knowledge" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="knowledge">
+              <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i>
+              <span>Knowledge Base</span>
+            </a>
+            <a id="navItemAnalytics" href="#/analytics" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="analytics">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 text-pink-400"></i>
+              <span>Analytics & Reports</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- AI Assistant Section -->
+        <div id="navSectionAi">
+          <div class="px-3 text-[10px] font-bold uppercase tracking-wider text-purple-300/60 mb-2">AI Copilot & Intelligence</div>
+          <nav class="space-y-1 text-xs font-semibold">
+            <a id="navItemAi" href="#/ai-assistant" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl bg-purple-950/80 border border-purple-500/40 text-purple-200 hover:bg-purple-900/80 transition-colors shadow-sm" data-route="ai-assistant">
+              <i data-lucide="bot" class="w-4 h-4 text-purple-400"></i>
+              <span>GenWizard AI Copilot</span>
+            </a>
+            <a id="navItemAiIntegration" href="#/admin/ai" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/ai">
+              <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
+              <span>AI Integration & Analytics</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Catalog & Entities -->
+        <div id="navSectionEntities">
+          <div id="navHeadingEntities" class="px-3 text-[10px] font-bold uppercase tracking-wider text-purple-300/60 mb-2">Platform Entities</div>
+          <nav class="space-y-1 text-xs font-semibold">
+            <a id="navItemApplications" href="#/applications" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="applications">
+              <i data-lucide="box" class="w-4 h-4 text-purple-400"></i>
+              <span>Applications</span>
+            </a>
+            <a id="navItemProjects" href="#/projects" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="projects">
+              <i data-lucide="folder-kanban" class="w-4 h-4 text-purple-400"></i>
+              <span>Projects</span>
+            </a>
+            <a id="navItemAssignmentGroups" href="#/assignment-groups" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="assignment-groups">
+              <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+              <span>Assignment Groups</span>
+            </a>
+            <a id="navItemOnCall" href="#/on-call" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="on-call">
+              <i data-lucide="phone-call" class="w-4 h-4 text-emerald-400"></i>
+              <span>On-Call & Escalations</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Administration & Configuration Engine (Admin Only) -->
+        <div id="adminNavSection">
+          <div class="px-3 text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-2 flex items-center justify-between">
+            <span>Administration</span>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-300 font-bold border border-purple-700">No-Code</span>
+          </div>
+          <nav class="space-y-1 text-xs font-semibold">
+            <a href="#/admin/entities" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/entities">
+              <i data-lucide="settings-2" class="w-4 h-4 text-amber-400"></i>
+              <span>Manage Applications & Teams</span>
+            </a>
+            <a href="#/admin/configuration" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/configuration">
+              <i data-lucide="sliders-horizontal" class="w-4 h-4 text-cyan-400"></i>
+              <span>Ticket Fields & Closure Notes</span>
+            </a>
+            <a href="#/admin/graph" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/graph">
+              <i data-lucide="git-branch" class="w-4 h-4 text-purple-400"></i>
+              <span>Visual Config Graph</span>
+            </a>
+            <a href="#/admin/simulator" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/simulator">
+              <i data-lucide="play-circle" class="w-4 h-4 text-emerald-400"></i>
+              <span>Routing & SLA Simulator</span>
+            </a>
+            <a href="#/admin/validation" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/validation">
+              <i data-lucide="shield-check" class="w-4 h-4 text-yellow-400"></i>
+              <span>Config Validation</span>
+            </a>
+            <a href="#/admin/slas" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/slas">
+              <i data-lucide="clock" class="w-4 h-4 text-purple-400"></i>
+              <span>SLA Policies & Versioning</span>
+            </a>
+            <a href="#/admin/calendars" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/calendars">
+              <i data-lucide="calendar" class="w-4 h-4 text-orange-400"></i>
+              <span>Business Calendars</span>
+            </a>
+            <a href="#/admin/ai" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/ai">
+              <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
+              <span>AI Integration & Analytics</span>
+            </a>
+            <a href="#/admin/audits" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/audits">
+              <i data-lucide="history" class="w-4 h-4 text-slate-400"></i>
+              <span>Config Change Audits</span>
+            </a>
+            <a href="#/admin/import-export" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/import-export">
+              <i data-lucide="file-up" class="w-4 h-4 text-green-400"></i>
+              <span>Config Import / Export</span>
+            </a>
+            <a href="#/admin/consul" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-[var(--sidebar-hover)] text-purple-200 transition-colors" data-route="admin/consul">
+              <i data-lucide="database" class="w-4 h-4 text-rose-400"></i>
+              <span>Consul KV & KM Config</span>
+            </a>
+          </nav>
+        </div>
+
+      </div>
+
+      <!-- User footer inside sidebar -->
+      <div class="p-3 border-t border-purple-950 flex items-center justify-between text-[11px] text-purple-300/70">
+        <div class="flex items-center space-x-1.5">
+          <span class="font-bold text-purple-300">GenWizard</span>
+          <span>v2.0</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+          <span>Accenture</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTENT DISPLAY AREA -->
+    <div class="flex-1 flex flex-col overflow-hidden relative">
+      <!-- Active Persona Context Banner -->
+      <div id="personaBannerContainer" class="px-6 pt-4 pb-0"></div>
+      <main id="mainApp" class="flex-1 overflow-y-auto p-6 relative">
+        <!-- Injected view content via app.js -->
+      </main>
+    </div>
+  </div>
+
+  <!-- FLOATING AI COPILOT BUTTON -->
+  <button id="floatingAiBtn" onclick="toggleFloatingAiDrawer()" class="fixed bottom-6 right-6 w-13 h-13 p-3.5 bg-gradient-to-tr from-purple-700 via-purple-600 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 z-40 group purple-glow" title="Ask GenWizard AI Copilot">
+    <i data-lucide="bot" class="w-6 h-6"></i>
+    <span class="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out font-semibold text-xs ml-0 group-hover:ml-2">GenWizard Copilot</span>
+  </button>
+
+  <!-- SLIDE-OUT AI COPILOT DRAWER -->
+  <div id="aiDrawer" class="hidden fixed bottom-6 right-6 w-96 h-[580px] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden animate-fade-in">
+    <!-- Drawer Header -->
+    <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 p-3.5 text-white flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <i data-lucide="bot" class="w-5 h-5 text-purple-200"></i>
+        <div>
+          <div class="font-bold text-sm leading-none">GenWizard Support Copilot</div>
+          <div class="text-[10px] text-purple-200 mt-0.5" id="drawerContextBadge">Accenture KM Integrated</div>
+        </div>
+      </div>
+      <div class="flex items-center space-x-1.5">
+        <button onclick="startNewDrawerChat()" class="text-white/80 hover:text-white p-1 rounded hover:bg-white/10" title="New Chat">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="toggleFloatingAiDrawer()" class="text-white/80 hover:text-white p-1 rounded hover:bg-white/10" title="Close">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Ticket Context Banner if active -->
+    <div id="drawerTicketContextBar" class="hidden bg-purple-50 dark:bg-purple-950/60 border-b border-purple-100 dark:border-purple-900/50 px-3 py-1.5 text-xs text-purple-900 dark:text-purple-200 flex items-center justify-between">
+      <span class="truncate font-semibold" id="drawerContextTicketText">INC0001001</span>
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-200 dark:bg-purple-800 font-bold" id="drawerContextPriorityText">P1</span>
+    </div>
+
+    <!-- Quick Prompts Pill Bar -->
+    <div class="bg-[var(--bg-tertiary)] px-3 py-2 border-b border-[var(--border-color)] flex space-x-1.5 overflow-x-auto text-[11px] whitespace-nowrap">
+      <button onclick="sendQuickPrompt('Troubleshoot this issue with commands')" class="px-2 py-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-purple-500">🛠️ Troubleshoot</button>
+      <button onclick="sendQuickPrompt('Summarize this ticket')" class="px-2 py-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-purple-500">📋 Summarize</button>
+      <button onclick="sendQuickPrompt('Find similar past incidents')" class="px-2 py-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-purple-500">🔍 Similar Incidents</button>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="drawerMessages" class="flex-1 p-3 overflow-y-auto space-y-3 text-xs">
+      <div class="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-[var(--text-secondary)] leading-relaxed">
+        Hello! I'm your GenWizard Support Copilot powered by Accenture. Ask me about pod restarts, 502 errors, runbooks, or open ticket troubleshooting.
+      </div>
+    </div>
+
+    <!-- Input Footer -->
+    <div class="p-2.5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]">
+      <form onsubmit="submitDrawerQuestion(event)" class="flex items-center space-x-2">
+        <input
+          type="text"
+          id="drawerInput"
+          placeholder="Ask GenWizard Copilot..."
+          class="flex-1 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+        />
+        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-xl transition-colors shadow">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODALS CONTAINER -->
+  <div id="modalContainer"></div>
+
+  <!-- Scripts: works in file://, http://localhost:8000/, and http://localhost:8000/itsm/ -->
+  <script src="js/app.js?v=2.13.0"></script>
+  <script>
+    safeRenderIcons();
+  </script>
+</body>
+</html>

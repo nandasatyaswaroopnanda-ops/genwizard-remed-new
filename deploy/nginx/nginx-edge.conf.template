@@ -1,0 +1,66 @@
+# ==============================================================================
+# Nexus ITSM — Edge Nginx Reverse Proxy & Redirect Manager
+# Handles edge entrypoint, domain validation, SSL/HTTP redirects, and
+# forwards clean application traffic downstream to the internal API Gateway.
+# ==============================================================================
+
+upstream api_gateway {
+    server ${GATEWAY_HOST:-gateway}:${GATEWAY_PORT:-8080};
+    keepalive 32;
+}
+
+server {
+    listen 80;
+    server_name ${APP_HOST:-localhost};
+    server_tokens off;
+    client_max_body_size 50m;
+
+    # Edge Security Headers
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Edge Liveness & Health Probe
+    location /edge-health {
+        access_log off;
+        default_type application/json;
+        return 200 '{"status":"healthy","service":"edge-nginx","proxy_target":"gateway"}';
+    }
+
+    # Clean URL & Edge SSO Redirects
+    location = /sso {
+        return 302 /sso-redirect.html$is_args$args;
+    }
+
+    location = /sso/ {
+        return 302 /sso-redirect.html$is_args$args;
+    }
+
+    location = /login {
+        return 302 /sso-redirect.html$is_args$args;
+    }
+
+    # Pass all clean application and API traffic to the internal API Gateway
+    location / {
+        proxy_pass http://api_gateway;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # Standard Proxy Forwarding Headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        # Timeouts and Buffering
+        proxy_connect_timeout 15s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
+    }
+}

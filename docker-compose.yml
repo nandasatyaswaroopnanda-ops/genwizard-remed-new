@@ -1,0 +1,140 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.nginx
+    container_name: nexus-itsm-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - APP_HOST=${APP_HOST:-localhost}
+      - GATEWAY_HOST=gateway
+      - GATEWAY_PORT=8080
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 80 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.gateway
+    container_name: nexus-itsm-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_HOST=${APP_HOST:-localhost}
+      - BACKEND_HOST=nexus-itsm
+      - BACKEND_PORT=8000
+      - IDENTITY_HOST=nexus-identity
+      - IDENTITY_PORT=8001
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8080 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      nexus-itsm:
+        condition: service_healthy
+      nexus-identity:
+        condition: service_healthy
+
+  nexus-itsm:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: nexus-itsm-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URL=mongodb://mongo-atr:${MONGO_PASSWORD:-mongo_secret_password}@mongo:27017/nexus_itsm?authSource=admin
+      - MONGO_DATABASE=nexus_itsm
+      - CONSUL_HTTP_ADDR=http://consul:8500
+      - CONSUL_HTTP_TOKEN=${CONSUL_HTTP_TOKEN:-}
+      - IDENTITY_SERVICE_URL=http://nexus-identity:8001
+      - KM_API_TOKEN=${KM_API_TOKEN:-local_demo_token}
+      - KEYCLOAK_ISSUER=${KEYCLOAK_ISSUER:-}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-nexus-itsm}
+    volumes:
+      - ./uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      mongo:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+
+  nexus-identity:
+    build:
+      context: .
+      dockerfile: identity_service/Dockerfile
+    container_name: nexus-itsm-identity
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGO_URL=mongodb://mongo-atr:${MONGO_PASSWORD:-mongo_secret_password}@mongo:27017/nexus_itsm?authSource=admin
+      - MONGO_DATABASE=nexus_itsm
+      - CONSUL_HTTP_ADDR=http://consul:8500
+      - CONSUL_HTTP_TOKEN=${CONSUL_HTTP_TOKEN:-}
+      - ITSM_BOOTSTRAP_ADMIN_USERNAME=admin
+      - ITSM_BOOTSTRAP_ADMIN_PASSWORD=${ITSM_ADMIN_PASSWORD:-admin_secret_password}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      mongo:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:7
+    container_name: nexus-itsm-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo-atr
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongo_secret_password}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --username mongo-atr --password $${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin --eval 'db.adminCommand(\"ping\").ok' | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  consul:
+    image: hashicorp/consul:1.19
+    container_name: nexus-itsm-consul
+    restart: unless-stopped
+    ports:
+      - "8500:8500"
+    command: agent -dev -client 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/v1/status/leader"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  mongo_data:

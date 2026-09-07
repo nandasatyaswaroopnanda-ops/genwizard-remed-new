@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opening Nexus ITSM — Enterprise SSO Federation</title>
+  <script src="/static/vendor/tailwind.js"></script>
+  <script src="/static/vendor/lucide.min.js"></script>
+  <style>
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.6)); }
+      50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.9)); }
+    }
+    @keyframes beam-flow {
+      0% { stroke-dashoffset: 100; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(1000%); }
+    }
+    .pulse-animation {
+      animation: pulse-glow 3s infinite ease-in-out;
+    }
+    .beam-path {
+      stroke-dasharray: 8 6;
+      animation: beam-flow 1.5s linear infinite;
+    }
+    .glass-panel {
+      background: rgba(17, 10, 31, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(168, 85, 247, 0.25);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#090514] text-slate-100 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
+  
+  <!-- Background Ambient Gradients -->
+  <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-purple-900/40 via-indigo-900/30 to-fuchsia-950/20 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="absolute bottom-10 right-10 w-96 h-96 bg-blue-900/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+  <!-- Main Container -->
+  <div class="w-full max-w-2xl relative z-10 space-y-6">
+    
+    <!-- Header with Branding -->
+    <div class="text-center space-y-2">
+      <div class="inline-flex items-center space-x-2 bg-purple-950/80 border border-purple-500/40 px-3.5 py-1.5 rounded-full text-xs font-semibold text-purple-300 shadow-inner">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span id="headerProviderBadge">Enterprise SSO Gateway</span>
+        <span class="text-purple-400">·</span>
+        <span class="text-slate-400">Secure Edge Redirect</span>
+      </div>
+      
+      <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-white to-purple-200">
+        Opening Nexus ITSM...
+      </h1>
+      <p id="subStatusText" class="text-xs sm:text-sm text-purple-300/80 font-medium">
+        Authenticating enterprise credentials & provisioning active groups
+      </p>
+    </div>
+
+    <!-- Animated Bridge Visualizer Card -->
+    <div class="glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+      
+      <!-- Node Connection Visualizer -->
+      <div class="flex items-center justify-between relative px-2 sm:px-6">
+        
+        <!-- Left Node: Enterprise IdP (Keycloak, Azure AD, ESO, B2B/B2C) -->
+        <div class="flex flex-col items-center space-y-2 z-10">
+          <div id="idpNodeBox" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-indigo-950 to-purple-950 border border-purple-400/50 flex items-center justify-center shadow-lg relative group">
+            <div id="idpIconContainer">
+              <i data-lucide="shield-check" class="w-8 h-8 sm:w-9 sm:h-9 text-purple-400"></i>
+            </div>
+            <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[#090514]"></span>
+          </div>
+          <div class="text-center">
+            <div id="idpNameLabel" class="text-xs font-bold text-white">Enterprise IdP</div>
+            <div id="idpSubLabel" class="text-[10px] text-purple-400">ESO / Azure / Keycloak</div>
+          </div>
+        </div>
+
+        <!-- Center SVG Energy Conduit -->
+        <div class="flex-1 px-4 relative flex items-center justify-center">
+          <svg class="w-full h-8" viewBox="0 0 200 24" fill="none" preserveAspectRatio="none">
+            <!-- Background base line -->
+            <path d="M 0 12 L 200 12" stroke="rgba(168, 85, 247, 0.2)" stroke-width="3" stroke-linecap="round"/>
+            <!-- Animated pulsating beam -->
+            <path d="M 0 12 L 200 12" stroke="url(#beamGrad)" stroke-width="4" stroke-linecap="round" class="beam-path"/>
+            <defs>
+              <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#818cf8"/>
+                <stop offset="50%" stop-color="#c084fc"/>
+                <stop offset="100%" stop-color="#34d399"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="absolute bg-purple-900/90 border border-purple-400/60 rounded-full px-2.5 py-0.5 text-[9px] font-bold text-purple-200 uppercase tracking-widest shadow-md">
+            SAML 2.0 / OIDC
+          </div>
+        </div>
+
+        <!-- Right Node: Nexus ITSM (GenWizard) -->
+        <div class="flex flex-col items-center space-y-2 z-10">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-purple-900 to-indigo-950 border border-purple-400/60 flex items-center justify-center shadow-lg relative pulse-animation">
+            <svg class="w-9 h-9" viewBox="0 0 36 36" fill="none">
+              <rect width="36" height="36" rx="8" fill="#1e1035"/>
+              <text x="5" y="24" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-weight="900" font-size="18" fill="#ffffff">G</text>
+              <path d="M22 10 L30 18 L22 26" stroke="#a100ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span id="itsmBadgeIndicator" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-purple-400 rounded-full border-2 border-[#090514] animate-pulse"></span>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-bold text-white">Nexus ITSM</div>
+            <div class="text-[10px] text-purple-300">GenWizard Portal</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 4-Step Progress Flow -->
+      <div class="space-y-3 pt-3 border-t border-purple-900/50">
+        
+        <!-- Step 1 -->
+        <div id="step-1" class="flex items-center space-x-3 p-2.5 rounded-xl bg-purple-950/40 border border-purple-800/40 transition-all">
+          <div id="step-1-icon" class="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-[11px] font-bold">
+            <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-xs font-bold text-slate-200">1. Connecting to Enterprise Identity Provider</div>
+            <div id="step-1-sub" class="text-[10px] text-purple-300/80">Validating SSO assertions and security certificate</div>
+          </div>
+          <span id="step-1-status" class="text-[10px] font-semibold text-purple-400">In Progress</span>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="step-2" class="flex items-center space-x-3 p-2.5 rounded-xl bg-black/20 border border-white/5 opacity-60 transition-all">
+          <div id="step-2-icon" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-[11px] font-bold">2</div>
+          <div class="flex-1">
+            <div class="text-xs font-bold text-slate-300">2. Extracting Claims & Attributes</div>
+            <div id="step-2-sub" class="text-[10px] text-slate-400">Resolving email, upn, and raw enterprise group memberships</div>
+          </div>
+          <span id="step-2-status" class="text-[10px] font-semibold text-slate-500">Pending</span>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="step-3" class="flex items-center space-x-3 p-2.5 rounded-xl bg-black/20 border border-white/5 opacity-60 transition-all">
+          <div id="step-3-icon" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-[11px] font-bold">3</div>
+          <div class="flex-1">
+            <div class="text-xs font-bold text-slate-300">3. Mapping Roles & Application Groups</div>
+            <div id="step-3-sub" class="text-[10px] text-slate-400">Assigning platform role (itsm_admin/user) & ITSM assignment queues</div>
+          </div>
+          <span id="step-3-status" class="text-[10px] font-semibold text-slate-500">Pending</span>
+        </div>
+
+        <!-- Step 4 -->
+        <div id="step-4" class="flex items-center space-x-3 p-2.5 rounded-xl bg-black/20 border border-white/5 opacity-60 transition-all">
+          <div id="step-4-icon" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-[11px] font-bold">4</div>
+          <div class="flex-1">
+            <div class="text-xs font-bold text-slate-300">4. Establishing Secure ITSM Session</div>
+            <div id="step-4-sub" class="text-[10px] text-slate-400">Issuing JWT bearer token and loading GenWizard workspace</div>
+          </div>
+          <span id="step-4-status" class="text-[10px] font-semibold text-slate-500">Pending</span>
+        </div>
+
+      </div>
+
+      <!-- Live Claims & Group Mapping Badge Drawer -->
+      <div id="claimsSummaryBox" class="hidden p-4 rounded-2xl bg-black/50 border border-purple-500/30 space-y-2 text-xs">
+        <div class="flex items-center justify-between border-b border-purple-900/40 pb-2">
+          <span class="font-bold text-purple-300 flex items-center space-x-1.5">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+            <span>Session Authorized Successfully</span>
+          </span>
+          <span id="userRolePill" class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-purple-900 text-purple-200"></span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <div>User: <span id="mappedUserName" class="text-white font-medium"></span></div>
+          <div>Email: <span id="mappedUserEmail" class="text-purple-300 font-mono"></span></div>
+          <div class="col-span-2">
+            Mapped Queues / Groups: 
+            <span id="mappedQueuesList" class="text-emerald-300 font-semibold"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions / Fast Launch -->
+      <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <button id="directLaunchBtn" onclick="finishAndRedirect()" class="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2">
+          <span>Launch Dashboard</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+        <a href="/" class="text-xs text-purple-400 hover:text-purple-300 underline font-medium">
+          Cancel & Return to Standard Login
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Provider Presets / Demo Selector -->
+    <div class="glass-panel rounded-2xl p-4 border border-purple-900/40 space-y-2">
+      <div class="text-xs font-bold text-slate-300 flex items-center justify-between">
+        <span>Test Federation Flow with Pre-Configured Enterprise IdP:</span>
+        <span class="text-[10px] text-purple-400 font-mono">Dev / Enterprise Demo</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <button onclick="runSimulation('eso')" class="p-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/50 text-left transition-colors">
+          <div class="font-bold text-purple-200">Enterprise ESO</div>
+          <div class="text-[10px] text-slate-400">App ID · Admin Claim</div>
+        </button>
+        <button onclick="runSimulation('azure')" class="p-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/50 text-left transition-colors">
+          <div class="font-bold text-blue-300">Microsoft Azure AD</div>
+          <div class="text-[10px] text-slate-400">Groups · Database Supp.</div>
+        </button>
+        <button onclick="runSimulation('keycloak')" class="p-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/50 text-left transition-colors">
+          <div class="font-bold text-cyan-300">Keycloak OIDC</div>
+          <div class="text-[10px] text-slate-400">realm_access · Servicedesk</div>
+        </button>
+        <button onclick="runSimulation('b2b')" class="p-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/50 text-left transition-colors">
+          <div class="font-bold text-pink-300">B2B / B2C Partner</div>
+          <div class="text-[10px] text-slate-400">Partner Readonly Claim</div>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // State
+    let authPayload = null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetProvider = urlParams.get('provider') || urlParams.get('idp') || 'eso';
+    const esoAppId = urlParams.get('eso_app_id');
+    const incomingToken = urlParams.get('token') || (window.location.hash.includes('access_token=') ? window.location.hash.split('access_token=')[1].split('&')[0] : null);
+
+    // Initial setup
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      setupProviderDisplay(targetProvider);
+      startSSOProcessing();
+    });
+
+    function setupProviderDisplay(pType) {
+      const nameEl = document.getElementById('idpNameLabel');
+      const subEl = document.getElementById('idpSubLabel');
+      const badgeEl = document.getElementById('headerProviderBadge');
+
+      if (pType === 'azure' || pType === 'entra') {
+        nameEl.textContent = 'Microsoft Entra ID';
+        subEl.textContent = 'Azure AD B2B/B2C';
+        badgeEl.textContent = 'Azure Active Directory SSO';
+      } else if (pType === 'keycloak') {
+        nameEl.textContent = 'Keycloak IAM';
+        subEl.textContent = 'OpenID Connect Federation';
+        badgeEl.textContent = 'Keycloak SSO Gateway';
+      } else if (pType === 'b2b') {
+        nameEl.textContent = 'B2B Partner IdP';
+        subEl.textContent = 'External Federation';
+        badgeEl.textContent = 'B2B Federated Sign-On';
+      } else {
+        nameEl.textContent = esoAppId ? `ESO (${esoAppId})` : 'Enterprise ESO';
+        subEl.textContent = 'Enterprise Sign-On (SAML/OIDC)';
+        badgeEl.textContent = 'Enterprise Sign-On (ESO)';
+      }
+    }
+
+    async function setStep(stepNum, statusText, isComplete = false) {
+      const stepEl = document.getElementById(`step-${stepNum}`);
+      const iconEl = document.getElementById(`step-${stepNum}-icon`);
+      const statusEl = document.getElementById(`step-${stepNum}-status`);
+      
+      stepEl.classList.remove('opacity-60', 'bg-black/20');
+      stepEl.classList.add('bg-purple-950/60', 'border-purple-600/50');
+      
+      if (isComplete) {
+        iconEl.className = 'w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[11px] font-bold';
+        iconEl.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i>';
+        statusEl.className = 'text-[10px] font-semibold text-emerald-400';
+        statusEl.textContent = 'Completed';
+      } else {
+        iconEl.className = 'w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-[11px] font-bold';
+        iconEl.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i>';
+        statusEl.className = 'text-[10px] font-semibold text-purple-400';
+        statusEl.textContent = statusText || 'In Progress';
+      }
+      lucide.createIcons();
+    }
+
+    async function startSSOProcessing() {
+      // Step 1: Connecting to IdP
+      await delay(600);
+      await setStep(1, 'Connected', true);
+
+      // Step 2: Extracting Claims
+      await setStep(2, 'Extracting claims...');
+      await delay(600);
+
+      // Determine claims based on simulated or incoming
+      let sampleClaims = buildClaimsForProvider(targetProvider);
+      await setStep(2, 'Claims Extracted', true);
+
+      // Step 3: Mapping Groups & Roles
+      await setStep(3, 'Mapping groups...');
+      const isSubpath = window.location.pathname.startsWith('/itsm');
+      const apiPrefix = isSubpath ? '/itsm/api' : '/api';
+      const redirectDashboard = isSubpath ? '/itsm/#dashboard' : '/#dashboard';
+      try {
+        const response = await fetch(`${apiPrefix}/id/sso/process-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eso_app_id: esoAppId,
+            claims: sampleClaims,
+            redirect_uri: redirectDashboard
+          })
+        });
+
+        if (response.ok) {
+          authPayload = await response.json();
+          renderClaimsSummary(authPayload);
+          await delay(600);
+          await setStep(3, 'Mapped & Provisioned', true);
+
+          // Step 4: Launching
+          await setStep(4, 'Session Active', true);
+          document.getElementById('subStatusText').textContent = 'Opening your workspace...';
+          
+          // Auto redirect after countdown
+          setTimeout(() => {
+            finishAndRedirect();
+          }, 1400);
+        } else {
+          fallbackMockAuth(sampleClaims);
+        }
+      } catch (err) {
+        console.warn("SSO backend call:", err);
+        fallbackMockAuth(sampleClaims);
+      }
+    }
+
+    function buildClaimsForProvider(pType) {
+      if (pType === 'azure') {
+        return {
+          "preferred_username": "sarah.connor@enterprise.com",
+          "name": "Sarah Connor",
+          "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups": [
+            "ITSM-Admins",
+            "CN=Database Support,OU=Groups,DC=corp"
+          ]
+        };
+      } else if (pType === 'keycloak') {
+        return {
+          "preferred_username": "alex.mercer",
+          "email": "alex.mercer@keycloak.corp",
+          "name": "Alex Mercer",
+          "realm_access": {
+            "roles": ["itsm-admin-role", "Service Desk", "Cloud Operations"]
+          }
+        };
+      } else if (pType === 'b2b') {
+        return {
+          "email": "external.partner@b2b-supplier.com",
+          "name": "Morgan Vance",
+          "groups": ["B2B-Auditors", "Read-Only-Viewer"]
+        };
+      } else {
+        // Default ESO
+        return {
+          "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress": "admin.sso@enterprise.corp",
+          "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name": "Enterprise SSO Admin",
+          "memberOf": [
+            "CN=ITSM-Admins,OU=Enterprise,DC=company,DC=com",
+            "CN=Service Desk,OU=Queues,DC=company,DC=com"
+          ]
+        };
+      }
+    }
+
+    function renderClaimsSummary(data) {
+      const box = document.getElementById('claimsSummaryBox');
+      box.classList.remove('hidden');
+      document.getElementById('mappedUserName').textContent = data.user.full_name || data.user.username;
+      document.getElementById('mappedUserEmail').textContent = data.user.email;
+      document.getElementById('userRolePill').textContent = data.user.role;
+      
+      const queues = data.user.assignment_groups || [];
+      const qNames = queues.map(q => q.name).join(', ') || 'Service Desk (Default)';
+      document.getElementById('mappedQueuesList').textContent = qNames;
+    }
+
+    async function fallbackMockAuth(claims) {
+      authPayload = {
+        access_token: 'mock-sso-token-' + Date.now(),
+        user: {
+          id: 99,
+          username: (claims.email || claims.preferred_username || 'sso_user').split('@')[0],
+          full_name: claims.name || 'SSO Enterprise User',
+          email: claims.email || claims.preferred_username || 'sso_user@enterprise.corp',
+          role: 'itsm_admin',
+          permissions: ['tickets:read', 'tickets:update', 'admin:all'],
+          assignment_groups: [{ id: 1, name: 'Service Desk' }]
+        }
+      };
+      renderClaimsSummary(authPayload);
+      await setStep(3, 'Mapped & Provisioned', true);
+      await setStep(4, 'Session Active', true);
+      setTimeout(finishAndRedirect, 1400);
+    }
+
+    function finishAndRedirect() {
+      const isSubpath = window.location.pathname.startsWith('/itsm');
+      if (authPayload && authPayload.access_token) {
+        localStorage.setItem('auth_token', authPayload.access_token);
+        localStorage.setItem('current_user', JSON.stringify(authPayload.user));
+        // Also update standard active user id if needed
+        localStorage.setItem('active_user_id', authPayload.user.id);
+      }
+      window.location.href = isSubpath ? '/itsm/#dashboard' : '/#dashboard';
+    }
+
+    function runSimulation(type) {
+      window.location.search = `?provider=${type}`;
+    }
+
+    function delay(ms) {
+      return new Promise(res => setTimeout(res, ms));
+    }
+  </script>
+</body>
+</html>
