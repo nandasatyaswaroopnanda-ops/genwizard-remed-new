@@ -105,16 +105,21 @@ docker exec -i atr-mongo mongosh -u atr -p <mongo_password> --authenticationData
 
 ---
 
-### Method 3: REST API / cURL
-If you want to invoke the `identity-management` REST API manually:
+### Method 3: REST API / cURL via atr-gateway
+If you want to invoke the authentication and group APIs manually:
 
 ```bash
-# 1. Login to get JWT
-TOKEN=$(curl -s -X POST http://identity-management:8001/auth/login \
+# 1. Login to get token via atr-gateway (with useDeflate=true)
+curl -i -X POST "http://localhost/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true" \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"<admin_password_from_consul>"}' | jq -r .access_token)
+  -d '{"username": "admin", "password": "<admin_password>"}'
 
-# 2. Create the IM_SAML End-User Group
+# 2. Or if invoking Identity Management service directly:
+TOKEN=$(curl -s -X POST http://localhost:8001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"<admin_password>"}' | jq -r .access_token)
+
+# 3. Create the IM_SAML End-User Group
 curl -X POST http://identity-management:8001/groups \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -124,7 +129,7 @@ curl -X POST http://identity-management:8001/groups \
     "permissions": ["ticket_create","ticket_read_own","ticket_update","applications_read","projects_read"]
   }'
 
-# 3. Create Support Fulfiller Group
+# 4. Create Support Fulfiller Group
 curl -X POST http://identity-management:8001/groups \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -132,16 +137,6 @@ curl -X POST http://identity-management:8001/groups \
     "name": "itsm_user",
     "description": "ITSM Support Fulfiller Group",
     "permissions": ["ticket_create","ticket_read","ticket_update","ticket_assign","ticket_resolve","applications_read","projects_read"]
-  }'
-
-# 4. Attach Corporate Support DL to Group (Optional Post-Install)
-curl -X POST http://identity-management:8001/ad-mappings \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "ad_group_name": "<your-corporate-dl-name>",
-    "target_role": "itsm_user",
-    "description": "Corporate Support Team DL"
   }'
 ```
 
@@ -161,17 +156,17 @@ If an administrator prefers using the existing web interface:
 
 ## 3. Turnkey Deployment Options
 
-### Option A: One-Command Automated Deploy Script
+### Option A: The Definitive Installer (`./install-existing-app.sh` — Recommended)
 
-Run the automated turnkey script on your Docker host:
+Run the single production installer on your Docker host:
 ```bash
-./deploy-to-existing-app.sh
+./install-existing-app.sh
 ```
-This script:
-1. Detects your existing Docker network (where `atr-mongo` and `consul` are running).
-2. Verifies reachability of the Spring Consul keys.
-3. Runs `nexus-itsm-core:latest` attached to the existing network.
-4. Executes the IM group and AD group bootstrap.
+This installer:
+1. **Auto-detects containers & network:** Discovers existing containers (`atr-mongo`, `atr-gateway`, `identity-management`, `consul`, `nginx`), finds their user-defined Docker network, and auto-attaches them so container DNS always works.
+2. **Auto-detects IM port:** Detects whether IM is running on port 8080 or 8001.
+3. **Resilient Launch:** Launches `nexus-itsm-core:latest` with `--add-host host.docker.internal:host-gateway`.
+4. **Automatic Group & Permission Sync:** Executes `bootstrap_external_im.py` inside the container. It authenticates via `atr-gateway` / IM REST APIs, and falls back to direct MongoDB synchronization in `atr-mongo`.
 
 ---
 
@@ -180,7 +175,7 @@ This script:
 Add `nexus-itsm-core` into your existing stack using [`docker-compose.existing-app-addon.yml`](file:///Users/ritika/Downloads/application_repo/service_now_ai/docker-compose.existing-app-addon.yml):
 
 ```bash
-EXISTING_DOCKER_NETWORK=<your_existing_network_name> docker compose -f docker-compose.existing-app-addon.yml up -d
+docker compose -f docker-compose.existing-app-addon.yml up -d
 ```
 
 ---
@@ -196,79 +191,40 @@ kubectl apply -f deploy/kubernetes/existing-cluster-overlay.yaml
 
 ## 4. Routing Configuration for Instances with Existing NGINX
 
-When NGINX is already running on the instance (e.g. handling SSL on port 80/443 and routing to `identity-management`, `atr-gateway`, etc.), Genwizard ITSM routes traffic cleanly under `/itsm/` and `/api/` with zero port conflicts.
+When NGINX is running on the instance (handling SSL on port 443 alongside `/identity-management` and `/atr`), Genwizard ITSM integrates cleanly under `/itsm` with zero port conflicts.
 
-### Scenario A: NGINX Runs in Docker (`nginx` container on same network)
-Add the following blocks inside your existing NGINX `server { listen 443 ssl; ... }` block:
+### Scenario A: NGINX Runs in Docker (Matching Your Existing App Style)
+Add this standard block inside your existing NGINX `server { listen 443 ssl; ... }` configuration:
 
 ```nginx
-# ==============================================================================
-# Genwizard ITSM Reverse Proxy Configuration (Docker Network)
-# ==============================================================================
-
-# 1. ITSM Web Application & Static Assets
-location /itsm/ {
-    proxy_pass http://nexus-itsm-core:8000/itsm/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Host $host;
-    
-    # WebSocket & HTTP/1.1 support
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    
-    # Extended timeouts
-    proxy_connect_timeout 60s;
-    proxy_send_timeout 120s;
-    proxy_read_timeout 300s;
-}
-
-# 2. ITSM REST API Endpoints (incidents, service-requests, ai, etc.)
-location /api/ {
-    proxy_pass http://nexus-itsm-core:8000/api/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    
-    # Disable buffering for real-time AI Copilot streaming
-    proxy_buffering off;
-    proxy_read_timeout 300s;
+location /itsm
+{
+    set $upstream http://nexus-itsm-core:8000;
+    proxy_pass $upstream;
+    include /etc/nginx/conf.d.includes/header-csp-restricted.conf;
+    proxy_hide_header ETag;
+    add_header ETag "";
 }
 ```
+
+*Note: Genwizard ITSM has **zero external CDN dependencies**. All JS/CSS libraries are vendored locally, so it is 100% compliant with `header-csp-restricted.conf`.*
 
 ### Scenario B: NGINX Runs Natively on the Host (`systemctl nginx`)
 If NGINX runs directly on the Linux host, target port `8000` via loopback:
 
 ```nginx
-location /itsm/ {
-    proxy_pass http://127.0.0.1:8000/itsm/;
+location /itsm {
+    proxy_pass http://localhost:8000/itsm;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-Port 443;
+    
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
-    proxy_read_timeout 300s;
-}
-
-location /api/ {
-    proxy_pass http://127.0.0.1:8000/api/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_http_version 1.1;
-    proxy_buffering off;
-    proxy_read_timeout 300s;
+    client_max_body_size 50M;
 }
 ```
 
