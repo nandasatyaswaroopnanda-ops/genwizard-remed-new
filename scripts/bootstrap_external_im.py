@@ -324,7 +324,7 @@ def sync_via_mongo(admin_user: str = "admin"):
 
         # Initialize and verify ITSM operational collections in MongoDB
         try:
-            from backend.mongo_dal import get_mongo_db
+            from backend.mongo_dal import get_mongo_db, mongo_client
             m_db = get_mongo_db()
             if m_db is not None:
                 indexes = [
@@ -344,6 +344,32 @@ def sync_via_mongo(admin_user: str = "admin"):
                     except Exception:
                         pass
                 logger.info("Direct Mongo: successfully initialized ITSM operational collections in existing Mongo!")
+
+            # Also seed existing IM database if it resides on the same Mongo instance
+            if mongo_client is not None:
+                try:
+                    all_dbs = mongo_client.list_database_names()
+                    for im_candidate_db in ["identity_management", "im_db", "im", "atr"]:
+                        if im_candidate_db in all_dbs:
+                            ext_im_db = mongo_client[im_candidate_db]
+                            for coll_name in ["custom_groups", "groups"]:
+                                for g in REQUIRED_GROUPS:
+                                    existing_doc = ext_im_db[coll_name].find_one({"name": g["name"]})
+                                    if not existing_doc:
+                                        ext_im_db[coll_name].insert_one({
+                                            "name": g["name"],
+                                            "description": g["description"],
+                                            "permissions": g["permissions"],
+                                            "active": True
+                                        })
+                                        logger.info("Direct Mongo: seeded '%s' into %s.%s", g["name"], im_candidate_db, coll_name)
+                                    else:
+                                        ext_im_db[coll_name].update_one(
+                                            {"_id": existing_doc["_id"]},
+                                            {"$set": {"permissions": g["permissions"], "description": g["description"], "active": True}}
+                                        )
+                except Exception as _ext_db_err:
+                    logger.debug("External IM database check skipped: %s", _ext_db_err)
         except Exception as _e:
             logger.debug("ITSM native index check skipped: %s", _e)
 
