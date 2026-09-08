@@ -16,7 +16,7 @@ OUTPUT_ATR="nexus-itsm-addon.atr.gz"
 echo "==> Creating clean, minimal runtime package for server deployment..."
 
 # Make sure scripts are executable
-chmod +x install-existing-app.sh deploy-to-existing-app.sh scripts/bootstrap_external_im.py
+chmod +x install-existing-app.sh scripts/bootstrap_external_im.py
 
 # Create a temporary staging directory to guarantee zero unnecessary files
 STAGE_DIR=$(mktemp -d /tmp/nexus-itsm-stage.XXXXXX)
@@ -34,7 +34,6 @@ cp Dockerfile "${STAGE_DIR}/"
 cp requirements.txt "${STAGE_DIR}/"
 cp docker-compose.existing-app-addon.yml "${STAGE_DIR}/"
 cp install-existing-app.sh "${STAGE_DIR}/"
-cp deploy-to-existing-app.sh "${STAGE_DIR}/"
 
 # Clean any python bytecode or DS_Store inside the stage
 find "${STAGE_DIR}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
