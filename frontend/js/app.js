@@ -556,6 +556,7 @@ async function loadCurrentUser() {
     const res = await fetch(`${API_BASE}/auth/current`, { headers });
     if (res.ok) {
       state.currentUser = await res.json();
+      localStorage.setItem('current_user', JSON.stringify(state.currentUser));
       updateUserUI();
       updateBackendStatus(true, 'Backend Online');
     } else {
@@ -585,6 +586,8 @@ async function loadAllUsers() {
 function isUserEndUser(user) {
   if (!user) return false;
   if (user.is_global_admin || user.username === 'admin') return false;
+  if (['administrator', 'itsm_admin', 'admin'].includes(user.role)) return false;
+  if ((user.custom_groups || []).includes('itsm_admin') || (user.custom_groups || []).includes('ITSM-Admins')) return false;
   if (user.username === 'john.smith' || ['employee', 'itsm_read', 'im_saml', 'atr_saml'].includes(user.role)) return true;
   if (user.is_end_user !== undefined) return Boolean(user.is_end_user);
   if (user.admin_projects && user.admin_projects.length > 0) return false;
@@ -747,6 +750,7 @@ function renderUserSwitcherDropdown() {
   container.innerHTML = state.allUsers.map(u => {
     const isSelected = state.currentUser && state.currentUser.id === u.id;
     const uName = u.full_name || u.username || 'User';
+    const uInitials = uName.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
     const userProj = (u.admin_projects && u.admin_projects[0]) || (u.support_projects && u.support_projects[0]) || '';
 
     return `
@@ -772,6 +776,10 @@ function toggleUserDropdown() {
 
 function switchUser(userId) {
   localStorage.setItem('nexus_user_id', userId.toString());
+  localStorage.removeItem('current_user');
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('active_user_id');
   toggleUserDropdown();
   if (userId === 2) {
     window.location.hash = '#/my-tickets';
