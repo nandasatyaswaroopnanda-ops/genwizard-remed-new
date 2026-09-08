@@ -93,7 +93,12 @@ def _extract_external_token_claims(token: str) -> Optional[Dict[str, Any]]:
 
     # 4. Remote token validation against external IM service if reachable
     im_base = os.getenv("IDENTITY_SERVICE_URL", "").rstrip("/")
-    candidate_endpoints = []
+    candidate_endpoints = [
+        "http://host.docker.internal/atr-gateway/identity-management/api/v1/auth/user",
+        "http://nginx/atr-gateway/identity-management/api/v1/auth/user",
+        "http://atr-gateway:8080/atr-gateway/identity-management/api/v1/auth/user",
+        "http://atr-gateway-container:8080/atr-gateway/identity-management/api/v1/auth/user",
+    ]
     if im_base:
         candidate_endpoints.extend([
             f"{im_base}/atr-gateway/identity-management/api/v1/auth/user",

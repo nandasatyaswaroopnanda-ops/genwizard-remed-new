@@ -145,13 +145,15 @@ def sync_via_api(username: str, password: str):
     logger.info("Attempting to connect to existing IM service at: %s", IM_SERVICE_URL)
 
     candidate_login_urls = [
+        "http://host.docker.internal/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
+        "http://nginx/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
+        "http://atr-gateway:8080/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
+        "http://atr-gateway-container:8080/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
         f"{IM_SERVICE_URL}/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
         f"{IM_SERVICE_URL}/identity-management/api/v1/auth/token?useDeflate=true",
         f"{IM_SERVICE_URL}/api/v1/auth/token?useDeflate=true",
         "http://identity-management:8080/api/v1/auth/token?useDeflate=true",
         "http://identity-management:8001/api/v1/auth/token?useDeflate=true",
-        "http://atr-gateway-container:8080/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
-        "http://atr-gateway:8080/atr-gateway/identity-management/api/v1/auth/token?useDeflate=true",
         f"{IM_SERVICE_URL}/auth/login",
         f"{IM_SERVICE_URL}/identity-management/auth/login",
         "http://identity-management:8080/identity-management/auth/login",
