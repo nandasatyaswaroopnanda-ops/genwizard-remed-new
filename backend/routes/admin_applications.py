@@ -26,6 +26,7 @@ class ApplicationSchema(BaseModel):
     environment: str = "Production"
     criticality: str = "High"
     business_service: Optional[str] = None
+    categories: Optional[Any] = None
     custom_fields: Dict[str, Any] = {}
     active: bool = True
     reason: str = "Application configuration update"
@@ -44,6 +45,7 @@ class ApplicationUpdateSchema(BaseModel):
     environment: Optional[str] = None
     criticality: Optional[str] = None
     business_service: Optional[str] = None
+    categories: Optional[Any] = None
     custom_fields: Optional[Dict[str, Any]] = None
     active: Optional[bool] = None
     reason: Optional[str] = "Application configuration update"
@@ -169,6 +171,8 @@ def create_application(payload: ApplicationSchema, db: Session = Depends(get_db)
     validate_group(payload.default_assignment_group_id, db)
     values = payload.model_dump(exclude={"reason", "project_id", "project_name"})
     values["custom_fields"] = json.dumps(values.get("custom_fields") or {})
+    if "categories" in values and values["categories"] is not None:
+        values["categories"] = json.dumps(values["categories"]) if not isinstance(values["categories"], str) else values["categories"]
     if target_proj:
         values["project_id"] = target_proj.id
         if not values.get("default_assignment_group_id"):
@@ -261,7 +265,7 @@ def update_application(application_id: int, payload: ApplicationUpdateSchema, db
     old = app.to_dict()
     update_data = payload.model_dump(exclude_unset=True, exclude={"reason", "project_id", "project_name"})
     for field, value in update_data.items():
-        if field == "custom_fields" and value is not None:
+        if field in ("custom_fields", "categories") and value is not None and not isinstance(value, str):
             value = json.dumps(value)
         setattr(app, field, value)
     db.add(app)

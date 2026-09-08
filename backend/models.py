@@ -168,6 +168,7 @@ class Application(Base):
     on_call_contact = Column(String(150), nullable=True)
     first_escalation_contact = Column(String(150), nullable=True)
     second_escalation_contact = Column(String(150), nullable=True)
+    categories = Column(Text, default="{}", nullable=True)
     custom_fields = Column(Text, default="{}")
     active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=utc_now)
@@ -181,6 +182,49 @@ class Application(Base):
             custom_fields = json.loads(self.custom_fields or "{}")
         except Exception:
             custom_fields = {}
+
+        # Default standard category sets for applications
+        default_categories = {
+            "Incident": [
+                "Application Outage / Error",
+                "Performance / High Latency",
+                "Frontend & UI Glitch",
+                "Database & Data Integrity",
+                "Authentication & Login Failure",
+                "API & Integration Exception",
+                "Network & Gateway Timeout"
+            ],
+            "Service Request": [
+                "User Access & Role Grant",
+                "Configuration Update Request",
+                "Data Export & Custom Report",
+                "Sandbox / Test Environment Setup",
+                "Software License & Tool Provisioning",
+                "General Technical Assistance"
+            ],
+            "Change Request": [
+                "Software Patch & Hotfix Release",
+                "Database Migration & DDL Schema Change",
+                "Cloud Infrastructure & Kubernetes Scaling",
+                "Configuration & Environment Update",
+                "Security Patch & Firewall Rule Update"
+            ]
+        }
+        categories_dict = {k: list(v) for k, v in default_categories.items()}
+        if hasattr(self, "categories") and self.categories:
+            try:
+                raw_cats = json.loads(self.categories) if isinstance(self.categories, str) else self.categories
+                if isinstance(raw_cats, dict):
+                    for k in ["Incident", "Service Request", "Change Request"]:
+                        if k in raw_cats and isinstance(raw_cats[k], list) and len(raw_cats[k]) > 0:
+                            categories_dict[k] = raw_cats[k]
+                elif isinstance(raw_cats, list) and len(raw_cats) > 0:
+                    categories_dict["Incident"] = raw_cats
+                    categories_dict["Service Request"] = raw_cats
+                    categories_dict["Change Request"] = raw_cats
+            except Exception:
+                pass
+
         proj_id = getattr(self, "project_id", None)
         proj_name = None
         if hasattr(self, "project") and self.project:
@@ -221,6 +265,7 @@ class Application(Base):
             "environment": self.environment,
             "criticality": self.criticality,
             "business_service": self.business_service,
+            "categories": categories_dict,
             "custom_fields": custom_fields,
             "active": self.active,
             "created_at": self.created_at.isoformat() if self.created_at else None

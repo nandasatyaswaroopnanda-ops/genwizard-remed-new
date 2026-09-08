@@ -6081,14 +6081,42 @@ function openAdminEntityModal(type, entityId = null) {
         <input type="hidden" id="entity_project_name" value="${allowedProjects[0]?.name || adminProjects[0] || ''}">
       </div>`;
 
-  const projectQueues = (!isGlobalAdmin && allowedProjects[0]) ? groups.filter(g => g.id === allowedProjects[0].l2_assignment_group_id || g.id === allowedProjects[0].l3_assignment_group_id || g.name.toLowerCase().startsWith(allowedProjects[0].name.toLowerCase())) : [];
-  const appEligibleGroups = (!isGlobalAdmin && projectQueues.length) ? projectQueues : groups;
-  const appDefaultGroupId = val('default_assignment_group_id') || (!isGlobalAdmin && allowedProjects[0] ? allowedProjects[0].l2_assignment_group_id : '');
+  const appCategories = record?.categories || {};
+  const incCatsVal = Array.isArray(appCategories['Incident']) ? appCategories['Incident'].join(', ') : '';
+  const reqCatsVal = Array.isArray(appCategories['Service Request']) ? appCategories['Service Request'].join(', ') : '';
+  const chgCatsVal = Array.isArray(appCategories['Change Request']) ? appCategories['Change Request'].join(', ') : '';
+
+  const categoriesConfigSection = `
+    <div class="md:col-span-2 p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="font-bold text-xs text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
+          <i data-lucide="tags" class="w-4 h-4 text-purple-600"></i>
+          <span>Application Ticket Categories (Configurable for Incident, Request & Change)</span>
+        </div>
+        <span class="text-[10px] text-slate-400">Comma-separated lists</span>
+      </div>
+      <div>
+        <label class="block font-semibold text-[11px] text-slate-600 dark:text-slate-300 mb-1">Incident Categories</label>
+        <input id="entity_incident_categories" value="${incCatsVal.replace(/"/g, '&quot;')}" placeholder="e.g. Application Outage, Database Error, UI Glitch, Login Issue, API Timeout" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2 text-xs">
+      </div>
+      <div>
+        <label class="block font-semibold text-[11px] text-slate-600 dark:text-slate-300 mb-1">Service Request Categories / Catalog Items</label>
+        <input id="entity_request_categories" value="${reqCatsVal.replace(/"/g, '&quot;')}" placeholder="e.g. User Access Grant, Data Export, Sandbox Setup, License Request" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2 text-xs">
+      </div>
+      <div>
+        <label class="block font-semibold text-[11px] text-slate-600 dark:text-slate-300 mb-1">Change Request Categories</label>
+        <input id="entity_change_categories" value="${chgCatsVal.replace(/"/g, '&quot;')}" placeholder="e.g. Software Patch, Database Migration, Infrastructure Scaling, Config Update" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2 text-xs">
+      </div>
+      <p class="text-[10px] text-purple-700 dark:text-purple-400">
+        These categories dynamically populate the ticket creation dropdown whenever this application is selected. You can add more categories at any time.
+      </p>
+    </div>
+  `;
 
   const fields = type === 'application' ? `
     <label>Application ID *${input('entity_code', val('app_id'), 'required placeholder="APP006"')}</label><label>Name *${input('entity_name', val('name'), 'required')}</label>
     ${projectField}
-    <label>Business owner${input('entity_business_owner', val('business_owner'))}</label><label>Technical owner${input('entity_technical_owner', val('technical_owner'))}</label><label>Business service${input('entity_business_service', val('business_service'))}</label><label>Default assignment group<select id="entity_group">${adminSelectOptions(appEligibleGroups, appDefaultGroupId, 'Project Level-2 Queue (Default)')}</select></label>${common}`
+    <label>Business owner${input('entity_business_owner', val('business_owner'))}</label><label>Technical owner${input('entity_technical_owner', val('technical_owner'))}</label><label>Business service${input('entity_business_service', val('business_service'))}</label><label>Default assignment group<select id="entity_group">${adminSelectOptions(appEligibleGroups, appDefaultGroupId, 'Project Level-2 Queue (Default)')}</select></label>${categoriesConfigSection}${common}`
     : type === 'project' ? (entityId ? `
     <label>Project ID *${input('entity_code', val('project_id'), 'required placeholder="PRJ006"')}</label><label>Name *${input('entity_name', val('name'), 'required')}</label>
     <label>Level-2 Assignment Group (Default for Project Tickets)<select id="entity_l2_group">${adminSelectOptions(groups, val('l2_assignment_group_id') || val('default_assignment_group_id'), 'Select Level-2 Frontline Queue')}</select></label>
@@ -6288,6 +6316,18 @@ async function submitAdminEntity(event, type, entityId = null) {
   let custom_fields = {};
   try { custom_fields = JSON.parse(value('entity_custom') || '{}'); } catch (_) { alert('Additional fields must be valid JSON.'); return; }
   const shared = { description: value('entity_description'), custom_fields };
+
+  function parseCategoriesInput(str) {
+    if (!str || !str.trim()) return [];
+    return str.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  const appCategories = type === 'application' ? {
+    "Incident": parseCategoriesInput(value('entity_incident_categories')),
+    "Service Request": parseCategoriesInput(value('entity_request_categories')),
+    "Change Request": parseCategoriesInput(value('entity_change_categories'))
+  } : undefined;
+
   const payload = type === 'application' ? {
     ...shared,
     app_id: value('entity_code'),
@@ -6300,6 +6340,7 @@ async function submitAdminEntity(event, type, entityId = null) {
     support_hours: value('entity_hours'),
     environment: value('entity_environment'),
     criticality: value('entity_criticality'),
+    categories: appCategories,
     default_assignment_group_id: groupId ? Number(groupId) : null
   }
     : type === 'project' ? {
@@ -8075,15 +8116,11 @@ async function openCreateModal(initialType = 'Incident', initialCatalogItem = nu
           <!-- INCIDENT-SPECIFIC FIELDS -->
           <div id="fieldsIncident" class="space-y-3.5">
             <div>
-              <label class="block font-semibold text-slate-400 mb-1">Category</label>
-              <select id="modal_category" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2.5 text-xs">
-                <option value="Application">Application</option>
-                <option value="Database">Database (Auto-routes to Database Support)</option>
-                <option value="Network">Network (Auto-routes to Network Support)</option>
-                <option value="Security">Security (Auto-routes to InfoSec)</option>
-                <option value="Infrastructure">Infrastructure / Cloud</option>
-                <option value="User Access">User Access / Login</option>
+              <label class="block font-semibold text-slate-400 mb-1">Category (Application-Tailored) *</label>
+              <select id="modal_category" required disabled class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2.5 text-xs font-semibold">
+                <option value="">Select an Application first...</option>
               </select>
+              <p class="text-[10px] text-slate-400 mt-1">Categories are dynamically configured for the chosen application. Auto-routing is governed by the project.</p>
             </div>
 
             ${!isEndUser ? `
@@ -8140,16 +8177,11 @@ async function openCreateModal(initialType = 'Incident', initialCatalogItem = nu
           <!-- SERVICE REQUEST-SPECIFIC FIELDS -->
           <div id="fieldsServiceRequest" class="hidden space-y-3.5">
             <div>
-              <label class="block font-semibold text-slate-400 mb-1">Service / Catalog Item *</label>
-              <select id="modal_req_catalog_item" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2.5 text-xs font-semibold">
-                <option value="Database Read-Only Access">Database Read-Only Access (PostgreSQL / MySQL)</option>
-                <option value="Software Installation & License">Software Installation & Developer Tools License</option>
-                <option value="Cloud Environment Sandbox">Cloud Environment Sandbox (EKS / AWS / Azure)</option>
-                <option value="User Role & Permission Grant">User Role & Permission Grant (AD / IAM)</option>
-                <option value="VPN & Remote Network Access">VPN & Remote Network Access</option>
-                <option value="Hardware / Laptop Peripheral">Hardware / Laptop Peripheral</option>
-                <option value="General Service Request">General Service Request / Assistance</option>
+              <label class="block font-semibold text-slate-400 mb-1">Service / Catalog Item (Application-Tailored) *</label>
+              <select id="modal_req_catalog_item" required disabled class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2.5 text-xs font-semibold">
+                <option value="">Select an Application first...</option>
               </select>
+              <p class="text-[10px] text-slate-400 mt-1">Catalog items are configured for the chosen application. Auto-routing is governed by the project.</p>
             </div>
 
             <div>
@@ -8175,14 +8207,11 @@ async function openCreateModal(initialType = 'Incident', initialCatalogItem = nu
               </div>
 
               <div>
-                <label class="block font-semibold text-slate-400 mb-1">Category *</label>
-                <select id="modal_chg_category" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2.5 text-xs">
-                  <option value="Software Patch">Software Patch / Code Release</option>
-                  <option value="Cloud Infrastructure">Cloud Infrastructure & Kubernetes</option>
-                  <option value="Database Migration">Database Migration / DDL</option>
-                  <option value="Security Patch">Security Patch / Firewall Rule</option>
-                  <option value="Configuration Update">Configuration Update</option>
+                <label class="block font-semibold text-slate-400 mb-1">Category (Application-Tailored) *</label>
+                <select id="modal_chg_category" required disabled class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2.5 text-xs">
+                  <option value="">Select an Application first...</option>
                 </select>
+                <p class="text-[10px] text-slate-400 mt-1">Change categories are configured for the chosen application. Auto-routing is governed by the project.</p>
               </div>
             </div>
 
@@ -8340,6 +8369,7 @@ function filterModalAppsAndGroups() {
       grpSelect.innerHTML = '<option value="">Select a Project first...</option>';
       grpSelect.disabled = true;
     }
+    filterModalGroupsForApp();
     return;
   }
 
@@ -8377,13 +8407,20 @@ function filterModalGroupsForApp() {
   const projSelect = document.getElementById('modal_proj');
   const appSelect = document.getElementById('modal_app');
   const grpSelect = document.getElementById('modal_assignment_group');
-  if (!grpSelect) return;
 
   const projId = projSelect && projSelect.value ? parseInt(projSelect.value) : null;
   const appId = appSelect && appSelect.value ? parseInt(appSelect.value) : null;
   const allProjects = window._modalProjects || [];
   const allApps = window._modalApps || [];
   const allGroups = window._modalGroups || [];
+
+  const selectedProj = allProjects.find(p => Number(p.id) === Number(projId));
+  const selectedApp = allApps.find(a => Number(a.id) === Number(appId));
+
+  // Dynamically update categories for Incident, Service Request & Change Request based on selected application
+  updateModalCategoriesForApp(selectedApp);
+
+  if (!grpSelect) return;
 
   if (!projId) {
     grpSelect.innerHTML = '<option value="">Select a Project first...</option>';
@@ -8392,8 +8429,6 @@ function filterModalGroupsForApp() {
   }
 
   grpSelect.disabled = false;
-  const selectedProj = allProjects.find(p => Number(p.id) === Number(projId));
-  const selectedApp = allApps.find(a => Number(a.id) === Number(appId));
   const projName = selectedProj ? selectedProj.name.trim().toLowerCase() : '';
   const appName = selectedApp ? selectedApp.name.trim().toLowerCase() : '';
 
@@ -8504,6 +8539,97 @@ function onModalGroupChange() {
     <option value="">-- Unassigned --</option>
     ${assignees.map(u => `<option value="${u.id}">${u.full_name} (${u.role})</option>`).join('')}
   `;
+}
+
+function updateModalCategoriesForApp(selectedApp) {
+  const incSelect = document.getElementById('modal_category');
+  const reqSelect = document.getElementById('modal_req_catalog_item');
+  const chgSelect = document.getElementById('modal_chg_category');
+
+  if (!selectedApp) {
+    if (incSelect) {
+      incSelect.innerHTML = '<option value="">Select an Application first...</option>';
+      incSelect.disabled = true;
+    }
+    if (reqSelect) {
+      reqSelect.innerHTML = '<option value="">Select an Application first...</option>';
+      reqSelect.disabled = true;
+    }
+    if (chgSelect) {
+      chgSelect.innerHTML = '<option value="">Select an Application first...</option>';
+      chgSelect.disabled = true;
+    }
+    return;
+  }
+
+  const defaultCategories = {
+    "Incident": [
+      "Application Outage / Error",
+      "Performance / High Latency",
+      "Frontend & UI Glitch",
+      "Database & Data Integrity",
+      "Authentication & Login Failure",
+      "API & Integration Exception",
+      "Network & Gateway Timeout"
+    ],
+    "Service Request": [
+      "User Access & Role Grant",
+      "Configuration Update Request",
+      "Data Export & Custom Report",
+      "Sandbox / Test Environment Setup",
+      "Software License & Tool Provisioning",
+      "General Technical Assistance"
+    ],
+    "Change Request": [
+      "Software Patch & Hotfix Release",
+      "Database Migration & DDL Schema Change",
+      "Cloud Infrastructure & Kubernetes Scaling",
+      "Configuration & Environment Update",
+      "Security Patch & Firewall Rule Update"
+    ]
+  };
+
+  const appCats = selectedApp.categories || {};
+  const incCats = (Array.isArray(appCats['Incident']) && appCats['Incident'].length > 0)
+    ? appCats['Incident']
+    : defaultCategories['Incident'];
+  const reqCats = (Array.isArray(appCats['Service Request']) && appCats['Service Request'].length > 0)
+    ? appCats['Service Request']
+    : (Array.isArray(appCats['Request']) && appCats['Request'].length > 0)
+      ? appCats['Request']
+      : defaultCategories['Service Request'];
+  const chgCats = (Array.isArray(appCats['Change Request']) && appCats['Change Request'].length > 0)
+    ? appCats['Change Request']
+    : (Array.isArray(appCats['Change']) && appCats['Change'].length > 0)
+      ? appCats['Change']
+      : defaultCategories['Change Request'];
+
+  const cleanEscape = (str) => String(str).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  if (incSelect) {
+    incSelect.disabled = false;
+    incSelect.innerHTML = incCats.map(c => `<option value="${cleanEscape(c)}">${cleanEscape(c)}</option>`).join('');
+  }
+
+  if (reqSelect) {
+    reqSelect.disabled = false;
+    reqSelect.innerHTML = reqCats.map(c => `<option value="${cleanEscape(c)}">${cleanEscape(c)}</option>`).join('');
+    if (window._modalInitialCatalogItem) {
+      reqSelect.value = window._modalInitialCatalogItem;
+      if (reqSelect.value !== window._modalInitialCatalogItem) {
+        const opt = document.createElement('option');
+        opt.value = window._modalInitialCatalogItem;
+        opt.textContent = window._modalInitialCatalogItem;
+        opt.selected = true;
+        reqSelect.appendChild(opt);
+      }
+    }
+  }
+
+  if (chgSelect) {
+    chgSelect.disabled = false;
+    chgSelect.innerHTML = chgCats.map(c => `<option value="${cleanEscape(c)}">${cleanEscape(c)}</option>`).join('');
+  }
 }
 
 function filterModalProjects() {
