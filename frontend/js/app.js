@@ -533,11 +533,27 @@ function toggleTheme() {
 
 // --- USER / PERSONA SWITCHING ---
 async function loadCurrentUser() {
-  const savedUserId = localStorage.getItem('nexus_user_id') || '1';
+  const savedUserId = localStorage.getItem('nexus_user_id') || localStorage.getItem('active_user_id') || '1';
+  const authToken = localStorage.getItem('auth_token') || localStorage.getItem('access_token') || '';
+  const headers = { 'X-User-ID': savedUserId };
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  // If stored current_user exists from external IM login, seed initial state
+  const storedUserJson = localStorage.getItem('current_user');
+  if (storedUserJson) {
+    try {
+      const parsed = JSON.parse(storedUserJson);
+      if (parsed && (parsed.username || parsed.name || parsed.full_name)) {
+        state.currentUser = parsed;
+        updateUserUI();
+      }
+    } catch (e) {}
+  }
+
   try {
-    const res = await fetch(`${API_BASE}/auth/current`, {
-      headers: { 'X-User-ID': savedUserId }
-    });
+    const res = await fetch(`${API_BASE}/auth/current`, { headers });
     if (res.ok) {
       state.currentUser = await res.json();
       updateUserUI();

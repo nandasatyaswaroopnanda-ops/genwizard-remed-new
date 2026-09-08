@@ -242,9 +242,12 @@ def _ensure_local_persona(user_id: int, db: Session) -> Optional[User]:
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
     x_user_id: Optional[str] = Header(None),
+    x_user_name: Optional[str] = Header(None),
+    x_remote_user: Optional[str] = Header(None),
+    x_user_email: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ) -> User:
-    """Validate bearer token from Identity Service or Keycloak SSO, or X-User-ID / demo user when unconfigured."""
+    """Validate bearer token from Identity Service, external IM, or Keycloak SSO, or proxy headers."""
     if credentials and credentials.credentials:
         token = credentials.credentials
         # 1. Try decoding as Identity Service JWT token
@@ -255,6 +258,33 @@ def get_current_user(
             user = db.query(User).filter(User.id == user_id, User.active == True).first()
             if user:
                 return user
+        except Exception:
+            pass
+
+        # 2. Try decoding token claims from external IM / Gateway token
+        try:
+            unverified = jwt.decode(token, options={"verify_signature": False})
+            ext_uname = unverified.get("preferred_username") or unverified.get("username") or unverified.get("sub")
+            ext_mail = unverified.get("email")
+            ext_name = unverified.get("name")
+            if ext_uname and not str(ext_uname).isdigit():
+                user = db.query(User).filter(
+                    (User.username.ilike(str(ext_uname).strip())) |
+                    (User.email.ilike(str(ext_mail).strip()) if ext_mail else False)
+                ).first()
+                if not user:
+                    user = User(
+                        username=str(ext_uname).strip(),
+                        full_name=str(ext_name or ext_uname).replace(".", " ").title(),
+                        email=str(ext_mail) if ext_mail else f"{ext_uname}@enterprise.corp",
+                        role="itsm_read",
+                        active=True
+                    )
+                    db.add(user)
+                    db.commit()
+                    db.refresh(user)
+                if user:
+                    return user
         except Exception:
             pass
 
@@ -318,6 +348,40 @@ def get_current_user(
             except Exception:
                 pass
 
+            return user
+
+    # 3. Check for external IM proxy headers (X-User-Name, X-Remote-User, X-User-Email)
+    ext_username = (x_user_name or x_remote_user or "").strip()
+    ext_email = (x_user_email or "").strip().lower()
+    if ext_username or ext_email:
+        user = None
+        if ext_username:
+            user = db.query(User).filter(User.username.ilike(ext_username)).first()
+        if not user and ext_email:
+            user = db.query(User).filter(User.email.ilike(ext_email)).first()
+        if not user and ext_username:
+            # Auto-provision user from external IM
+            user = User(
+                username=ext_username,
+                full_name=ext_username.replace(".", " ").title(),
+                email=ext_email if ext_email else f"{ext_username}@enterprise.corp",
+                role="itsm_read",
+                active=True
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            try:
+                from backend.models import CustomGroup, UserCustomGroup
+                for s_name in ["IM_SAML", "ATR_SAML"]:
+                    saml_cg = db.query(CustomGroup).filter(CustomGroup.name == s_name).first()
+                    if saml_cg and not db.query(UserCustomGroup).filter(UserCustomGroup.user_id == user.id, UserCustomGroup.custom_group_id == saml_cg.id).first():
+                        db.add(UserCustomGroup(user_id=user.id, custom_group_id=saml_cg.id))
+                db.commit()
+                db.refresh(user)
+            except Exception:
+                pass
+        if user:
             return user
 
     if x_user_id and str(x_user_id).isdigit():
