@@ -5545,7 +5545,7 @@ async function renderApplicationsView(container) {
       <div class="flex items-center justify-between gap-4">
         <div><h1 class="text-2xl font-black tracking-tight">Application Portfolio Catalog</h1>
         <p class="text-sm text-slate-500">Critical tier-1 and tier-2 organizational services.</p>
-        </div>${canManageApps ? `<button onclick="window.location.hash='#/admin/entities'" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Manage / Add Application</button>` : ''}</div>
+        </div>${canManageApps ? `<div class="flex gap-2"><button onclick="openAdminEntityModal('application')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Application</button><button onclick="window.location.hash='#/admin/entities'" class="border border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] px-3 py-2 rounded-xl text-xs font-semibold">Manage Teams</button></div>` : ''}</div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         ${apps.map(a => {
           const canDeleteApp = isGlobalAdmin || (isProjectAdmin && a.project_name && adminProjects.map(p => p.toLowerCase()).includes(a.project_name.toLowerCase()));
@@ -5570,7 +5570,13 @@ async function renderApplicationsView(container) {
             </div>
           </div>
         `;
-        }).join('')}
+        }).join('') || `
+          <div class="md:col-span-3 p-8 text-center rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] text-slate-400">
+            <p class="font-bold text-sm mb-1 text-[var(--text-primary)]">No applications registered yet</p>
+            <p class="text-xs mb-4">Register your first application under an associated project to start managing tickets, SLAs, and categories.</p>
+            ${canManageApps ? `<button onclick="openAdminEntityModal('application')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Application</button>` : ''}
+          </div>
+        `}
       </div>
     </div>
   `;
@@ -6067,7 +6073,24 @@ function adminSelectOptions(items, selectedId, label) {
   return `<option value="">${label}</option>${items.map(item => `<option value="${item.id}" ${item.id === selectedId ? 'selected' : ''}>${item.name}</option>`).join('')}`;
 }
 
-function openAdminEntityModal(type, entityId = null) {
+async function openAdminEntityModal(type, entityId = null) {
+  if (!state.adminEntities || !state.adminEntities.groups) {
+    try {
+      const authHeaders = { 'X-User-ID': state.currentUser ? state.currentUser.id.toString() : '1' };
+      const [appsRes, projectsRes, groupsRes] = await Promise.all([
+        fetch(`${API_BASE}/admin/applications`, { headers: authHeaders }),
+        fetch(`${API_BASE}/admin/projects`, { headers: authHeaders }),
+        fetch(`${API_BASE}/admin/groups`, { headers: authHeaders })
+      ]);
+      if (appsRes.ok && projectsRes.ok && groupsRes.ok) {
+        state.adminEntities = {
+          apps: await appsRes.json(),
+          projects: await projectsRes.json(),
+          groups: await groupsRes.json()
+        };
+      }
+    } catch (e) {}
+  }
   const { apps = [], projects = [], groups = [] } = state.adminEntities || {};
   const isGlobalAdmin = state.currentUser?.is_global_admin || state.currentUser?.username === 'admin' || state.currentUser?.role === 'administrator' || state.currentUser?.role === 'itsm_admin';
   const adminProjects = state.currentUser?.admin_projects || [];
@@ -6088,6 +6111,12 @@ function openAdminEntityModal(type, entityId = null) {
         <input type="hidden" id="entity_project" value="${allowedProjects[0]?.id || ''}">
         <input type="hidden" id="entity_project_name" value="${allowedProjects[0]?.name || adminProjects[0] || ''}">
       </div>`;
+
+  const projectQueues = (!isGlobalAdmin && allowedProjects[0])
+    ? groups.filter(g => g.id === allowedProjects[0].l2_assignment_group_id || g.id === allowedProjects[0].l3_assignment_group_id || g.name.toLowerCase().startsWith(allowedProjects[0].name.toLowerCase()))
+    : [];
+  const appEligibleGroups = (!isGlobalAdmin && projectQueues.length) ? projectQueues : groups;
+  const appDefaultGroupId = val('default_assignment_group_id') || (!isGlobalAdmin && allowedProjects[0] ? allowedProjects[0].l2_assignment_group_id : '');
 
   const appCategories = record?.categories || {};
   const incCatsVal = Array.isArray(appCategories['Incident']) ? appCategories['Incident'].join(', ') : '';
