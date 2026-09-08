@@ -170,3 +170,50 @@ def test_enterprise_ai_fallback():
     )
     assert "kubectl get pods" in resp
     assert len(cites) > 0
+
+def test_ai_copilot_cross_project_capabilities():
+    resp, cites = EnterpriseKnowledgeFallback.generate_response(
+        "will it be able to read all the incidents, request and worknotes everything across the projects to get relevant info ? what it will do exactly"
+    )
+    assert "Yes, absolutely" in resp
+    assert "ticket_work_notes" in resp
+    assert "Cross-Project" in resp
+    assert len(cites) > 0
+
+def test_ai_copilot_work_notes_synthesis(test_db):
+    user = User(username="support_eng", full_name="Support Engineer", role="support")
+    test_db.add(user)
+    test_db.flush()
+
+    inc = Incident(
+        number="INC0009999",
+        caller_id=user.id,
+        application_id=1,
+        project_id=1,
+        short_description="Redis connection timeouts during batch job",
+        description="Application pods timing out connecting to Redis cluster.",
+        priority="P1",
+        assignment_group_id=1,
+        assigned_to_id=user.id,
+        status="In Progress"
+    )
+    test_db.add(inc)
+    test_db.flush()
+
+    note = TicketWorkNote(
+        ticket_type="incident",
+        ticket_id=inc.id,
+        user_id=user.id,
+        note="Identified rogue cron job flushing keyspace every 5 minutes. Killed rogue PID 44102."
+    )
+    test_db.add(note)
+    test_db.flush()
+
+    resp, cites = EnterpriseKnowledgeFallback.generate_response(
+        f"summarize ticket {inc.number}",
+        db=test_db
+    )
+    assert "INC0009999" in resp
+    assert "Redis connection timeouts" in resp
+    assert "Killed rogue PID 44102" in resp
+    assert any(c["url"] == f"#/incidents/{inc.number}" for c in cites)

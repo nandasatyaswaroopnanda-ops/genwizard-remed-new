@@ -7965,7 +7965,7 @@ async function submitFullScreenAiQuestion(e) {
   const msgContainer = document.getElementById('fullAiMessages');
   msgContainer.innerHTML += `
     <div class="flex flex-col items-end">
-      <div class="max-w-xl p-3 rounded-xl bg-purple-600 text-white">${q}</div>
+      <div class="max-w-xl p-3 rounded-xl bg-purple-600 text-white break-words whitespace-pre-wrap">${q}</div>
     </div>
     <div id="tempLoader" class="flex items-center space-x-2 text-slate-400"><i data-lucide="loader-2" class="w-4 h-4 animate-spin text-purple-500"></i><span>Copilot is searching runbooks...</span></div>
   `;
@@ -7991,12 +7991,12 @@ async function submitFullScreenAiQuestion(e) {
     if (loader) loader.remove();
 
     msgContainer.innerHTML += `
-      <div class="flex flex-col items-start">
-        <div class="max-w-2xl p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] space-y-2">
-          <div>${marked.parse(data.message.content)}</div>
+      <div class="flex flex-col items-start w-full">
+        <div class="max-w-3xl w-full p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] space-y-2 overflow-hidden break-words">
+          <div class="prose prose-sm dark:prose-invert max-w-full break-words overflow-hidden [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_pre]:whitespace-pre-wrap [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:bg-slate-900 [&_pre]:text-slate-100 [&_code]:break-all [&_table]:overflow-x-auto [&_table]:block [&_p]:break-words">${marked.parse(data.message.content)}</div>
           ${(data.citations || []).length ? `
-            <div class="pt-2 border-t border-[var(--border-color)] text-[10px] text-slate-400">
-              <span class="font-bold">Sources:</span> ${data.citations.map(c => `<span class="underline ml-1">${c.title}</span>`).join(', ')}
+            <div class="pt-2 border-t border-[var(--border-color)] text-[10px] text-slate-400 flex flex-wrap gap-1 items-center">
+              <span class="font-bold">Sources:</span> ${data.citations.map(c => `<a href="${c.url || '#'}" class="underline text-purple-600 dark:text-purple-400 mr-1.5">${c.title}</a>`).join('')}
             </div>
           ` : ''}
         </div>
@@ -8050,7 +8050,9 @@ async function submitDrawerQuestion(e) {
 
   const box = document.getElementById('drawerMessages');
   box.innerHTML += `
-    <div class="p-2 rounded-lg bg-purple-600 text-white ml-6 text-right">${q}</div>
+    <div class="flex justify-end">
+      <div class="p-2.5 rounded-xl bg-purple-600 text-white max-w-[85%] break-words whitespace-pre-wrap">${q}</div>
+    </div>
     <div id="drawerLoading" class="text-slate-400 p-2"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin inline mr-1 text-purple-500"></i>Analyzing knowledge base...</div>
   `;
   lucide.createIcons();
@@ -8073,8 +8075,15 @@ async function submitDrawerQuestion(e) {
     if (l) l.remove();
 
     box.innerHTML += `
-      <div class="p-2.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)] mr-6 space-y-1.5 leading-relaxed">
-        <div>${marked.parse(data.message.content)}</div>
+      <div class="flex justify-start w-full">
+        <div class="p-3 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] max-w-full overflow-hidden break-words space-y-2 leading-relaxed">
+          <div class="prose prose-xs dark:prose-invert max-w-full break-words overflow-hidden [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_pre]:whitespace-pre-wrap [&_pre]:p-2.5 [&_pre]:rounded-lg [&_pre]:bg-slate-900 [&_pre]:text-slate-100 [&_code]:break-all [&_table]:overflow-x-auto [&_table]:block [&_p]:break-words">${marked.parse(data.message.content)}</div>
+          ${(data.citations || []).length ? `
+            <div class="pt-2 border-t border-[var(--border-color)] text-[10px] text-slate-400 flex flex-wrap gap-1 items-center">
+              <span class="font-bold">Sources:</span> ${data.citations.map(c => `<a href="${c.url || '#'}" class="underline text-purple-600 dark:text-purple-400 mr-1.5">${c.title}</a>`).join('')}
+            </div>
+          ` : ''}
+        </div>
       </div>
     `;
     box.scrollTop = box.scrollHeight;

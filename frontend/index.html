@@ -335,7 +335,7 @@
   </button>
 
   <!-- SLIDE-OUT AI COPILOT DRAWER -->
-  <div id="aiDrawer" class="hidden fixed bottom-6 right-6 w-96 h-[580px] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden animate-fade-in">
+  <div id="aiDrawer" class="hidden fixed bottom-6 right-6 w-96 max-w-[calc(100vw-2rem)] sm:w-[440px] h-[580px] max-h-[calc(100vh-5rem)] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden animate-fade-in">
     <!-- Drawer Header -->
     <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 p-3.5 text-white flex items-center justify-between">
       <div class="flex items-center space-x-2">
@@ -369,8 +369,8 @@
     </div>
 
     <!-- Messages Container -->
-    <div id="drawerMessages" class="flex-1 p-3 overflow-y-auto space-y-3 text-xs">
-      <div class="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-[var(--text-secondary)] leading-relaxed">
+    <div id="drawerMessages" class="flex-1 p-3 overflow-y-auto overflow-x-hidden space-y-3 text-xs break-words">
+      <div class="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-[var(--text-secondary)] leading-relaxed break-words">
         Hello! I'm your GenWizard Support Copilot powered by Accenture. Ask me about pod restarts, 502 errors, runbooks, or open ticket troubleshooting.
       </div>
     </div>
