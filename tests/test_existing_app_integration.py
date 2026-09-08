@@ -327,3 +327,47 @@ def test_external_im_authenticated_user_direct_navigation_and_interaction():
     assert resp_cookie.json()["username"] == "cookie_user"
 
 
+def test_deflated_and_proxy_header_authentication():
+    """
+    Verify robust authentication across:
+    1. Deflated / zlib compressed tokens (used by Spring / ATR Gateway with ?useDeflate=true).
+    2. Base64 encoded JSON tokens.
+    3. Upstream reverse proxy headers (X-Forwarded-User, Remote-User, X-Authenticated-User).
+    """
+    import base64
+    import zlib
+    import json
+
+    # 1. Deflated token (zlib compressed + base64)
+    user_payload = json.dumps({
+        "username": "deflated_emp",
+        "email": "deflated.emp@enterprise.corp",
+        "roles": ["user"]
+    })
+    deflated_bytes = zlib.compress(user_payload.encode("utf-8"))
+    deflated_token = base64.b64encode(deflated_bytes).decode("utf-8")
+
+    resp_deflated = client.get("/api/auth/current", headers={"Authorization": f"Bearer {deflated_token}"})
+    assert resp_deflated.status_code == 200
+    assert resp_deflated.json()["username"] == "deflated_emp"
+
+    # 2. Base64 JSON token
+    b64_json = base64.b64encode(json.dumps({
+        "username": "json_user",
+        "email": "json.user@company.com"
+    }).encode("utf-8")).decode("utf-8")
+
+    resp_json_token = client.get("/api/auth/current", headers={"Authorization": f"Bearer {b64_json}"})
+    assert resp_json_token.status_code == 200
+    assert resp_json_token.json()["username"] == "json_user"
+
+    # 3. Upstream reverse proxy headers (X-Forwarded-User, Remote-User)
+    resp_proxy = client.get("/api/auth/current", headers={
+        "X-Forwarded-User": "proxy_employee",
+        "X-Forwarded-Email": "proxy.employee@enterprise.corp"
+    })
+    assert resp_proxy.status_code == 200
+    assert resp_proxy.json()["username"] == "proxy_employee"
+
+
+

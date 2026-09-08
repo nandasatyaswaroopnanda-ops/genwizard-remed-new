@@ -35,10 +35,13 @@ cp requirements.txt "${STAGE_DIR}/"
 cp docker-compose.existing-app-addon.yml "${STAGE_DIR}/"
 cp install-existing-app.sh "${STAGE_DIR}/"
 
-# Clean any python bytecode or DS_Store inside the stage
+# Clean any python bytecode, DS_Store, or non-runtime files inside the stage
 find "${STAGE_DIR}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 find "${STAGE_DIR}" -type f -name "*.pyc" -delete 2>/dev/null || true
 find "${STAGE_DIR}" -type f -name ".DS_Store" -delete 2>/dev/null || true
+rm -f "${STAGE_DIR}/identity_service/Dockerfile" 2>/dev/null || true
+rm -rf "${STAGE_DIR}/frontend/static" 2>/dev/null || true
+rm -f "${STAGE_DIR}/scripts/seed_im_mongo.js" 2>/dev/null || true
 
 # Archive strictly the staged files
 tar -czf "${APP_DIR}/${OUTPUT_TAR}" -C "${STAGE_DIR}" .

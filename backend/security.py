@@ -1,8 +1,11 @@
 """Keycloak bearer-token validation and role-to-access mapping."""
 import os
 import json
+import base64
+import zlib
+import time
 from functools import lru_cache
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import httpx
 import jwt
@@ -14,6 +17,109 @@ from backend.database import get_db
 from backend.models import User, DistributionList
 
 bearer = HTTPBearer(auto_error=False)
+
+_IM_TOKEN_VALIDATION_CACHE: Dict[str, Tuple[Dict[str, Any], float]] = {}
+
+
+def _extract_external_token_claims(token: str) -> Optional[Dict[str, Any]]:
+    """
+    Resiliently extract user claims from external IM / ATR Gateway token.
+    Supports:
+    1. Standard unverified JWT decode
+    2. Deflated / zlib compressed token (Spring / ATR Gateway with ?useDeflate=true)
+    3. Base64-encoded JSON payload
+    4. Remote token validation against IDENTITY_SERVICE_URL
+    """
+    if not token or not isinstance(token, str):
+        return None
+    token = token.strip().strip('"').strip("'")
+    if not token:
+        return None
+
+    # Check in-memory validation cache (TTL: 5 minutes)
+    cached = _IM_TOKEN_VALIDATION_CACHE.get(token)
+    if cached:
+        claims, expires_at = cached
+        if time.time() < expires_at:
+            return claims
+        _IM_TOKEN_VALIDATION_CACHE.pop(token, None)
+
+    # 1. Try standard unverified JWT decode
+    try:
+        claims = jwt.decode(token, options={"verify_signature": False})
+        if isinstance(claims, dict) and any(k in claims for k in ("sub", "username", "preferred_username", "email", "name", "userId", "user_id", "id")):
+            _IM_TOKEN_VALIDATION_CACHE[token] = (claims, time.time() + 300)
+            return claims
+    except Exception:
+        pass
+
+    # 2. Try deflated / zlib compressed token (ATR Gateway / Spring ?useDeflate=true)
+    for decoder in (base64.b64decode, base64.urlsafe_b64decode):
+        try:
+            padded = token + "=" * ((4 - len(token) % 4) % 4)
+            compressed_bytes = decoder(padded)
+            for wbits in (zlib.MAX_WBITS, -zlib.MAX_WBITS, 16 + zlib.MAX_WBITS):
+                try:
+                    decompressed = zlib.decompress(compressed_bytes, wbits).decode("utf-8", errors="ignore")
+                    try:
+                        parsed = json.loads(decompressed)
+                        if isinstance(parsed, dict):
+                            _IM_TOKEN_VALIDATION_CACHE[token] = (parsed, time.time() + 300)
+                            return parsed
+                    except Exception:
+                        try:
+                            claims = jwt.decode(decompressed, options={"verify_signature": False})
+                            if isinstance(claims, dict):
+                                _IM_TOKEN_VALIDATION_CACHE[token] = (claims, time.time() + 300)
+                                return claims
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    # 3. Try base64-encoded JSON directly
+    for decoder in (base64.b64decode, base64.urlsafe_b64decode):
+        try:
+            padded = token + "=" * ((4 - len(token) % 4) % 4)
+            raw_text = decoder(padded).decode("utf-8", errors="ignore")
+            parsed = json.loads(raw_text)
+            if isinstance(parsed, dict) and any(k in parsed for k in ("username", "preferred_username", "email", "sub", "name", "id")):
+                _IM_TOKEN_VALIDATION_CACHE[token] = (parsed, time.time() + 300)
+                return parsed
+        except Exception:
+            pass
+
+    # 4. Remote token validation against external IM service if reachable
+    im_base = os.getenv("IDENTITY_SERVICE_URL", "").rstrip("/")
+    candidate_endpoints = []
+    if im_base:
+        candidate_endpoints.extend([
+            f"{im_base}/atr-gateway/identity-management/api/v1/auth/user",
+            f"{im_base}/identity-management/api/v1/auth/user",
+            f"{im_base}/api/v1/auth/user",
+            f"{im_base}/api/v1/users/me",
+            f"{im_base}/auth/user",
+        ])
+    candidate_endpoints.extend([
+        "http://identity-management:8080/api/v1/auth/user",
+        "http://identity-management:8080/identity-management/api/v1/auth/user",
+        "http://identity-management:8001/api/v1/auth/user",
+        "http://identity-management:8001/auth/user"
+    ])
+    for endpoint in candidate_endpoints:
+        try:
+            r = httpx.get(endpoint, headers={"Authorization": f"Bearer {token}", "Accept": "application/json"}, timeout=2.0)
+            if r.status_code == 200:
+                user_data = r.json()
+                if isinstance(user_data, dict):
+                    _IM_TOKEN_VALIDATION_CACHE[token] = (user_data, time.time() + 300)
+                    return user_data
+        except Exception:
+            pass
+
+    return None
 # Keycloak groups may be assigned these roles directly or through composite
 # organisation-specific roles. Keep custom role composition in the IdP rather
 # than hard-coding a new application deployment for every group.
@@ -253,14 +359,24 @@ def get_current_user(
     if credentials and credentials.credentials:
         token = credentials.credentials
     elif request:
-        token = (
-            request.cookies.get("auth_token") or
-            request.cookies.get("access_token") or
-            request.cookies.get("token") or
-            request.cookies.get("jwt") or
-            request.headers.get("x-access-token") or
-            request.headers.get("x-auth-token")
-        )
+        cookie_keys = ["auth_token", "access_token", "token", "jwt", "im_token", "atr_token", "short_token", "id_token", "sessionId", "JSESSIONID"]
+        for ck in cookie_keys:
+            cval = request.cookies.get(ck)
+            if cval:
+                token = cval
+                break
+        if not token:
+            header_keys = ["x-access-token", "x-auth-token", "x-token", "im-token", "atr-token"]
+            for hk in header_keys:
+                hval = request.headers.get(hk)
+                if hval:
+                    token = hval
+                    break
+        if not token:
+            # Check for bearer in standard Authorization header if credentials didn't parse
+            auth_hdr = request.headers.get("authorization", "")
+            if auth_hdr.lower().startswith("bearer "):
+                token = auth_hdr[7:].strip()
 
     if token:
         # 1. Try decoding as Identity Service JWT token
@@ -274,56 +390,57 @@ def get_current_user(
         except Exception:
             pass
 
-        # 2. Try decoding token claims from external IM / Gateway token
+        # 2. Try decoding token claims from external IM / Gateway token (JWT, deflated, base64, or remote IM verification)
         try:
-            unverified = jwt.decode(token, options={"verify_signature": False})
-            ext_uname = unverified.get("preferred_username") or unverified.get("username") or unverified.get("sub")
-            ext_mail = unverified.get("email")
-            ext_name = unverified.get("name")
-            ext_uid = unverified.get("user_id") or unverified.get("userId") or unverified.get("id")
+            unverified = _extract_external_token_claims(token)
+            if unverified:
+                ext_uname = unverified.get("preferred_username") or unverified.get("username") or unverified.get("user") or unverified.get("sub") or unverified.get("login")
+                ext_mail = unverified.get("email") or unverified.get("mail")
+                ext_name = unverified.get("name") or unverified.get("fullName") or unverified.get("display_name")
+                ext_uid = unverified.get("user_id") or unverified.get("userId") or unverified.get("id")
 
-            user = None
-            if ext_uid and str(ext_uid).isdigit():
-                user = db.query(User).filter(User.id == int(ext_uid), User.active == True).first()
+                user = None
+                if ext_uid and str(ext_uid).isdigit():
+                    user = db.query(User).filter(User.id == int(ext_uid), User.active == True).first()
 
-            if not user and ext_uname and str(ext_uname).isdigit():
-                user = db.query(User).filter(User.id == int(ext_uname), User.active == True).first()
+                if not user and ext_uname and str(ext_uname).isdigit():
+                    user = db.query(User).filter(User.id == int(ext_uname), User.active == True).first()
 
-            if not user and ext_uname:
-                user = db.query(User).filter(User.username.ilike(str(ext_uname).strip()), User.active == True).first()
+                if not user and ext_uname:
+                    user = db.query(User).filter(User.username.ilike(str(ext_uname).strip()), User.active == True).first()
 
-            if not user and ext_mail:
-                user = db.query(User).filter(User.email.ilike(str(ext_mail).strip()), User.active == True).first()
+                if not user and ext_mail:
+                    user = db.query(User).filter(User.email.ilike(str(ext_mail).strip()), User.active == True).first()
 
-            if not user and ext_uname:
-                u_str = str(ext_uname).lower().strip()
-                token_roles = [str(r).lower() for r in (unverified.get("roles") or unverified.get("realm_access", {}).get("roles", []) or [])]
-                is_admin_user = (u_str == "admin") or any(r in ("admin", "administrator", "itsm_admin", "itsm-admin") for r in token_roles)
-                user = User(
-                    username=str(ext_uname).strip(),
-                    full_name=str(ext_name or ext_uname).replace(".", " ").title(),
-                    email=str(ext_mail) if ext_mail else f"{ext_uname}@enterprise.corp",
-                    role="itsm_admin" if is_admin_user else "itsm_read",
-                    active=True
-                )
-                db.add(user)
-                db.commit()
-                db.refresh(user)
-
-                try:
-                    from backend.models import CustomGroup, UserCustomGroup
-                    target_groups = ["itsm_admin", "IM_SAML", "ATR_SAML"] if is_admin_user else ["IM_SAML", "ATR_SAML"]
-                    for s_name in target_groups:
-                        saml_cg = db.query(CustomGroup).filter(CustomGroup.name == s_name).first()
-                        if saml_cg and not db.query(UserCustomGroup).filter(UserCustomGroup.user_id == user.id, UserCustomGroup.custom_group_id == saml_cg.id).first():
-                            db.add(UserCustomGroup(user_id=user.id, custom_group_id=saml_cg.id))
+                if not user and ext_uname:
+                    u_str = str(ext_uname).lower().strip()
+                    token_roles = [str(r).lower() for r in (unverified.get("roles") or unverified.get("realm_access", {}).get("roles", []) or unverified.get("authorities", []) or unverified.get("groups", []) or [])]
+                    is_admin_user = (u_str == "admin") or any(r in ("admin", "administrator", "itsm_admin", "itsm-admin", "role_admin") for r in token_roles)
+                    user = User(
+                        username=str(ext_uname).strip(),
+                        full_name=str(ext_name or ext_uname).replace(".", " ").title(),
+                        email=str(ext_mail) if ext_mail else f"{ext_uname}@enterprise.corp",
+                        role="itsm_admin" if is_admin_user else "itsm_read",
+                        active=True
+                    )
+                    db.add(user)
                     db.commit()
                     db.refresh(user)
-                except Exception:
-                    pass
 
-            if user:
-                return user
+                    try:
+                        from backend.models import CustomGroup, UserCustomGroup
+                        target_groups = ["itsm_admin", "IM_SAML", "ATR_SAML"] if is_admin_user else ["IM_SAML", "ATR_SAML"]
+                        for s_name in target_groups:
+                            saml_cg = db.query(CustomGroup).filter(CustomGroup.name == s_name).first()
+                            if saml_cg and not db.query(UserCustomGroup).filter(UserCustomGroup.user_id == user.id, UserCustomGroup.custom_group_id == saml_cg.id).first():
+                                db.add(UserCustomGroup(user_id=user.id, custom_group_id=saml_cg.id))
+                        db.commit()
+                        db.refresh(user)
+                    except Exception:
+                        pass
+
+                if user:
+                    return user
         except Exception:
             pass
 
@@ -389,9 +506,22 @@ def get_current_user(
 
             return user
 
-    # 3. Check for external IM proxy headers (X-User-Name, X-Remote-User, X-User-Email)
-    ext_username = (x_user_name or x_remote_user or "").strip()
-    ext_email = (x_user_email or "").strip().lower()
+    # 3. Check for external IM proxy headers (X-User-Name, X-Remote-User, X-Forwarded-User, Remote-User, etc.)
+    ext_username = (
+        (request.headers.get("x-user-name") or
+         request.headers.get("x-remote-user") or
+         request.headers.get("x-forwarded-user") or
+         request.headers.get("remote-user") or
+         request.headers.get("x-authenticated-user") or
+         request.headers.get("x-webauth-user") or
+         x_user_name or x_remote_user or "") if request else (x_user_name or x_remote_user or "")
+    ).strip()
+    ext_email = (
+        (request.headers.get("x-user-email") or
+         request.headers.get("x-forwarded-email") or
+         request.headers.get("x-authenticated-email") or
+         x_user_email or "") if request else (x_user_email or "")
+    ).strip().lower()
     if ext_username or ext_email:
         user = None
         if ext_username:

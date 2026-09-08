@@ -20,65 +20,74 @@ echo "==========================================================================
 echo "    GENWIZARD ITSM — EXISTING APPLICATION STACK ONBOARDING & INSTALLER"
 echo "================================================================================"
 
-# 1. Auto-detect Identity Management Port (8080 vs 8001)
+# 1. Auto-detect Existing Application Stack Containers & Port
+EXISTING_CONTAINERS=""
+if command -v docker >/dev/null 2>&1; then
+  EXISTING_CONTAINERS=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -iE 'identity|mongo|consul|gateway|nginx|atr' || true)
+fi
+
+IM_CONTAINER=""
 IM_PORT="8080"
-if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' | grep -Eq "^identity-management$"; then
-  DETECTED_IM_PORT=$(docker inspect identity-management --format '{{range $p, $conf := .NetworkSettings.Ports}}{{$p}}{{"\n"}}{{end}}' 2>/dev/null | grep -oE '[0-9]+' | head -n1 || true)
-  if [[ -n "$DETECTED_IM_PORT" ]]; then
-    IM_PORT="$DETECTED_IM_PORT"
+if [[ -n "$EXISTING_CONTAINERS" ]]; then
+  IM_CONTAINER=$(echo "$EXISTING_CONTAINERS" | grep -iE 'identity|im-' | head -n1 || true)
+  if [[ -n "$IM_CONTAINER" ]]; then
+    DETECTED_IM_PORT=$(docker inspect "$IM_CONTAINER" --format '{{range $p, $conf := .NetworkSettings.Ports}}{{$p}}{{"\n"}}{{end}}' 2>/dev/null | grep -oE '[0-9]+' | head -n1 || true)
+    if [[ -n "$DETECTED_IM_PORT" ]]; then
+      IM_PORT="$DETECTED_IM_PORT"
+    fi
   fi
 fi
-IDENTITY_URL="${IDENTITY_SERVICE_URL:-http://identity-management:${IM_PORT}}"
-echo "==> Identity Management target URL: ${IDENTITY_URL} (Port ${IM_PORT})"
 
-# 2. Auto-detect & Validate Existing Docker Network (atr_netbridge / bridge)
-if [[ -z "$DOCKER_NETWORK" ]] && command -v docker >/dev/null 2>&1; then
-  for container in atr-mongo identity-management consul nginx atr-gateway-container; do
-    if docker ps --format '{{.Names}}' | grep -Eq "^${container}$"; then
-      # Extract first network name, sanitizing any trailing carriage returns, newlines, or whitespace
-      RAW_NET=$(docker inspect "$container" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' 2>/dev/null | tr -d '\r\n ' || true)
-      if [[ -n "$RAW_NET" && "$RAW_NET" != "null" ]]; then
-        DOCKER_NETWORK="$RAW_NET"
-        echo "==> Auto-detected candidate Docker network: '${DOCKER_NETWORK}' (from container '${container}')"
-        break
-      fi
+IM_HOST="${IM_CONTAINER:-identity-management}"
+IDENTITY_URL="${IDENTITY_SERVICE_URL:-http://${IM_HOST}:${IM_PORT}}"
+echo "==> Target Identity Management: ${IDENTITY_URL} (Container: '${IM_HOST}', Port: ${IM_PORT})"
+
+# 2. Auto-detect & Validate Existing User-Defined Docker Network
+DETECTED_NET=""
+if [[ -n "$EXISTING_CONTAINERS" ]]; then
+  for c in $EXISTING_CONTAINERS; do
+    c_net=$(docker inspect "$c" --format '{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' 2>/dev/null | tr -d '\r' | grep -vE '^(bridge|host|none)$' | head -n1 || true)
+    if [[ -n "$c_net" ]]; then
+      DETECTED_NET="$c_net"
+      echo "==> Detected active Docker network '${DETECTED_NET}' from running container '${c}'"
+      break
     fi
   done
 fi
 
-# Verify the network is recognized by the Docker daemon
-VALID_NETWORK=""
-if command -v docker >/dev/null 2>&1 && [[ -n "$DOCKER_NETWORK" ]]; then
-  if docker network inspect "$DOCKER_NETWORK" >/dev/null 2>&1; then
-    VALID_NETWORK="$DOCKER_NETWORK"
-    echo "==> Verified Docker network '${VALID_NETWORK}' exists and is active."
-  else
-    echo "(!) Network name '${DOCKER_NETWORK}' not directly matched. Searching docker network daemon..."
-    MATCHED=$(docker network ls --format '{{.Name}}' | grep -iE "^${DOCKER_NETWORK}$|${DOCKER_NETWORK}" | head -n1 || true)
-    if [[ -n "$MATCHED" ]] && docker network inspect "$MATCHED" >/dev/null 2>&1; then
-      VALID_NETWORK="$MATCHED"
-      echo "==> Resolved exact Docker network name: '${VALID_NETWORK}'"
-    fi
+if [[ -n "${EXISTING_DOCKER_NETWORK:-}" ]]; then
+  DETECTED_NET="$EXISTING_DOCKER_NETWORK"
+fi
+
+if [[ -z "$DETECTED_NET" ]] && command -v docker >/dev/null 2>&1; then
+  DETECTED_NET=$(docker network ls --format '{{.Name}}' 2>/dev/null | tr -d '\r' | grep -iE 'atr|app|prod|backend|gateway|itsm' | grep -vE '^(bridge|host|none)$' | head -n1 || true)
+fi
+
+# Fallback: ensure a dedicated user-defined network exists (never default to plain unmanaged bridge)
+if [[ -z "$DETECTED_NET" || "$DETECTED_NET" == "bridge" || "$DETECTED_NET" == "host" || "$DETECTED_NET" == "none" ]]; then
+  DETECTED_NET="atr_netbridge"
+fi
+
+if command -v docker >/dev/null 2>&1; then
+  if ! docker network inspect "$DETECTED_NET" >/dev/null 2>&1; then
+    echo "==> Initializing user-defined Docker network: '${DETECTED_NET}'"
+    docker network create "$DETECTED_NET" || true
+  fi
+
+  # Seamlessly attach existing containers to this network so DNS resolution is 100% reliable
+  if [[ -n "$EXISTING_CONTAINERS" ]]; then
+    for c in $EXISTING_CONTAINERS; do
+      docker network connect "$DETECTED_NET" "$c" 2>/dev/null || true
+    done
   fi
 fi
 
-if [[ -z "$VALID_NETWORK" ]]; then
-  # Fallback: find any network containing atr or bridge
-  ALT_NET=$(docker network ls --format '{{.Name}}' | grep -iE "atr|bridge" | grep -v "host" | grep -v "none" | head -n1 || true)
-  if [[ -n "$ALT_NET" ]]; then
-    VALID_NETWORK="$ALT_NET"
-    echo "==> Using available application network: '${VALID_NETWORK}'"
-  else
-    VALID_NETWORK="bridge"
-    echo "==> Defaulting to Docker network: 'bridge'"
-  fi
-fi
-
-DOCKER_NETWORK="$VALID_NETWORK"
+DOCKER_NETWORK="$DETECTED_NET"
 export EXISTING_DOCKER_NETWORK="$DOCKER_NETWORK"
 export ITSM_HOST_PORT="$ITSM_HOST_PORT"
 export MONGO_DATABASE="$MONGO_DATABASE"
 export IDENTITY_SERVICE_URL="$IDENTITY_URL"
+echo "==> Using verified Docker network: '${DOCKER_NETWORK}'"
 
 # 3. Load Offline Pre-Built Docker Image (if provided)
 if [[ -f "$APP_DIR/nexus-itsm-core-image.tar.gz" ]]; then
@@ -93,53 +102,39 @@ fi
 echo "==> Starting Genwizard ITSM Core container on network '${DOCKER_NETWORK}'..."
 COMPOSE_OK=false
 
-# Try compose up first
 if docker compose -f "$APP_DIR/docker-compose.existing-app-addon.yml" up -d --build 2>&1; then
   COMPOSE_OK=true
 elif command -v docker-compose >/dev/null 2>&1 && docker-compose -f "$APP_DIR/docker-compose.existing-app-addon.yml" up -d --build 2>&1; then
   COMPOSE_OK=true
 fi
 
-# Resilient fallback: if compose encountered network or parser error, run direct docker run
+# Resilient fallback: direct docker run on verified network with host-gateway and volume
 if [[ "$COMPOSE_OK" != "true" ]]; then
-  echo "(!) Docker compose had an issue with network mapping. Falling back to direct resilient docker run..."
+  echo "(!) Docker compose had an issue. Falling back to direct resilient docker run..."
   docker rm -f nexus-itsm-core 2>/dev/null || true
-  
+
   if ! docker image inspect nexus-itsm-core:latest >/dev/null 2>&1; then
     echo "==> Building nexus-itsm-core:latest..."
     docker build -t nexus-itsm-core:latest -f "$APP_DIR/Dockerfile" "$APP_DIR"
   fi
 
-  # Run container on detected network
-  if docker run -d \
-      --name nexus-itsm-core \
-      --restart unless-stopped \
-      --network "${DOCKER_NETWORK}" \
-      -p "${ITSM_HOST_PORT}:8000" \
-      -e CONSUL_HTTP_ADDR="${CONSUL_ADDR}" \
-      -e MONGO_DATABASE="${MONGO_DATABASE}" \
-      -e IDENTITY_SERVICE_URL="${IDENTITY_URL}" \
-      -e ITSM_SUBPATH="/itsm" \
-      -e ITSM_BOOTSTRAP_ADMIN_USERNAME="admin" \
-      -e KM_API_TOKEN="local_demo_token" \
-      nexus-itsm-core:latest >/dev/null 2>&1; then
-    echo "✓ Direct docker run on network '${DOCKER_NETWORK}' succeeded."
-  else
-    echo "(!) Retrying with container-attached network to atr-mongo..."
-    docker rm -f nexus-itsm-core 2>/dev/null || true
-    docker run -d \
-      --name nexus-itsm-core \
-      --restart unless-stopped \
-      --network container:atr-mongo \
-      -e CONSUL_HTTP_ADDR="${CONSUL_ADDR}" \
-      -e MONGO_DATABASE="${MONGO_DATABASE}" \
-      -e IDENTITY_SERVICE_URL="${IDENTITY_URL}" \
-      -e ITSM_SUBPATH="/itsm" \
-      -e ITSM_BOOTSTRAP_ADMIN_USERNAME="admin" \
-      -e KM_API_TOKEN="local_demo_token" \
-      nexus-itsm-core:latest
-    echo "✓ Container attached to atr-mongo network."
-  fi
+  docker volume create nexus-itsm-uploads >/dev/null 2>&1 || true
+
+  docker run -d \
+    --name nexus-itsm-core \
+    --restart unless-stopped \
+    --network "${DOCKER_NETWORK}" \
+    --add-host host.docker.internal:host-gateway \
+    -p "${ITSM_HOST_PORT}:8000" \
+    -v nexus-itsm-uploads:/app/uploads \
+    -e CONSUL_HTTP_ADDR="${CONSUL_ADDR}" \
+    -e MONGO_DATABASE="${MONGO_DATABASE}" \
+    -e IDENTITY_SERVICE_URL="${IDENTITY_URL}" \
+    -e ITSM_SUBPATH="/itsm" \
+    -e ITSM_BOOTSTRAP_ADMIN_USERNAME="admin" \
+    -e KM_API_TOKEN="local_demo_token" \
+    nexus-itsm-core:latest
+  echo "✓ Direct docker run on network '${DOCKER_NETWORK}' succeeded."
 fi
 
 # 5. Await Container Readiness

@@ -48,6 +48,8 @@ services:
       
       # AI Copilot / Knowledge Engine token
       - KM_API_TOKEN=${KM_API_TOKEN:-local_demo_token}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - itsm-uploads:/app/uploads
     healthcheck:
@@ -66,4 +68,4 @@ volumes:
 networks:
   existing-app-net:
     external: true
-    name: ${EXISTING_DOCKER_NETWORK:-bridge}
+    name: ${EXISTING_DOCKER_NETWORK:-atr_netbridge}
