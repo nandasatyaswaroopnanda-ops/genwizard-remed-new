@@ -18,15 +18,53 @@ def get_session_user(db: Session, x_user_id: Optional[str]) -> User:
         user_id = int(x_user_id)
     return db.query(User).filter(User.id == user_id).first() or db.query(User).first()
 
+def resolve_date_range(time_period: Optional[str], start_date: Optional[str], end_date: Optional[str]):
+    now = datetime.datetime.utcnow()
+    start_dt = None
+    end_dt = None
+
+    if time_period == "custom" or start_date or end_date:
+        time_period = "custom"
+        if start_date:
+            try:
+                start_dt = datetime.datetime.strptime(start_date[:10], "%Y-%m-%d")
+            except Exception:
+                pass
+        if end_date:
+            try:
+                end_dt = datetime.datetime.strptime(end_date[:10], "%Y-%m-%d").replace(
+                    hour=23, minute=59, second=59, microsecond=999999
+                )
+            except Exception:
+                pass
+    elif time_period == "today":
+        start_dt = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_dt = now
+    elif time_period == "7d":
+        start_dt = now - datetime.timedelta(days=7)
+    elif time_period == "30d":
+        start_dt = now - datetime.timedelta(days=30)
+    elif time_period == "90d":
+        start_dt = now - datetime.timedelta(days=90)
+    elif time_period == "1y":
+        start_dt = now - datetime.timedelta(days=365)
+    
+    return time_period, start_dt, end_dt
+
 @router.get("")
 def get_dashboard_metrics(
     project_id: Optional[int] = None,
     project_name: Optional[str] = None,
+    time_period: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     x_user_id: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     current_user = get_session_user(db, x_user_id)
     user_group_ids = [m.group_id for m in current_user.memberships]
+
+    time_period, start_dt, end_dt = resolve_date_range(time_period, start_date, end_date)
 
     # Resolve project scoping if requested
     target_project_id = None
@@ -51,6 +89,15 @@ def get_dashboard_metrics(
         inc_q = inc_q.filter(Incident.project_id == target_project_id)
         req_q = req_q.filter(ServiceRequest.project_id == target_project_id)
         chg_q = chg_q.filter(ChangeRequest.project_id == target_project_id)
+
+    if start_dt:
+        inc_q = inc_q.filter(Incident.created_at >= start_dt)
+        req_q = req_q.filter(ServiceRequest.created_at >= start_dt)
+        chg_q = chg_q.filter(ChangeRequest.created_at >= start_dt)
+    if end_dt:
+        inc_q = inc_q.filter(Incident.created_at <= end_dt)
+        req_q = req_q.filter(ServiceRequest.created_at <= end_dt)
+        chg_q = chg_q.filter(ChangeRequest.created_at <= end_dt)
 
     # Global/Project Counts
     total_incidents = inc_q.count()
@@ -159,6 +206,8 @@ def get_dashboard_metrics(
 @router.get("/analytics")
 def get_analytics_data(
     time_period: str = "30d",
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     project_id: Optional[int] = None,
     project_name: Optional[str] = None,
     x_user_id: Optional[str] = Header(None),
@@ -166,18 +215,11 @@ def get_analytics_data(
 ):
     """
     Returns aggregated metrics for the interactive ITSM Analytics Dashboard.
-    Supports closure category breakdown (Bug, Config, App Limitation, Infra Limitation) and ADO tracking.
+    Supports closure category breakdown (Bug, Config, App Limitation, Infra Limitation), ADO tracking,
+    and custom time periods with start_date & end_date.
     """
     now = datetime.datetime.utcnow()
-    start_dt = None
-    if time_period == "7d":
-        start_dt = now - datetime.timedelta(days=7)
-    elif time_period == "30d":
-        start_dt = now - datetime.timedelta(days=30)
-    elif time_period == "90d":
-        start_dt = now - datetime.timedelta(days=90)
-    elif time_period == "1y":
-        start_dt = now - datetime.timedelta(days=365)
+    time_period, start_dt, end_dt = resolve_date_range(time_period, start_date, end_date)
 
     target_project_id = None
     if project_id:
@@ -192,6 +234,8 @@ def get_analytics_data(
         q = q.filter(Incident.project_id == target_project_id)
     if start_dt:
         q = q.filter(Incident.created_at >= start_dt)
+    if end_dt:
+        q = q.filter(Incident.created_at <= end_dt)
     incidents = q.all()
 
     total_incidents = len(incidents)
@@ -249,12 +293,30 @@ def get_analytics_data(
             durations_hours.append(hrs)
     mttr = round(sum(durations_hours) / max(1, len(durations_hours)), 1) if durations_hours else 3.2
 
-    # Volume timeline (last 7 or 14 points)
+    # Volume timeline
     days_map = {}
-    days_back = 7 if time_period == "7d" else (30 if time_period == "30d" else 14)
-    for d in range(min(days_back, 14), -1, -1):
-        day_date = (now - datetime.timedelta(days=d)).strftime("%Y-%m-%d")
-        days_map[day_date] = {"date": day_date, "created": 0, "resolved": 0}
+    if time_period == "custom" and start_dt:
+        eff_end = (end_dt or now).date()
+        eff_start = start_dt.date()
+        diff_days = max(1, (eff_end - eff_start).days)
+        if diff_days <= 31:
+            curr = eff_start
+            while curr <= eff_end:
+                d_str = curr.strftime("%Y-%m-%d")
+                days_map[d_str] = {"date": d_str, "created": 0, "resolved": 0}
+                curr += datetime.timedelta(days=1)
+        else:
+            step = max(1, diff_days // 15)
+            curr = eff_start
+            while curr <= eff_end:
+                d_str = curr.strftime("%Y-%m-%d")
+                days_map[d_str] = {"date": d_str, "created": 0, "resolved": 0}
+                curr += datetime.timedelta(days=step)
+    else:
+        days_back = 7 if time_period == "7d" else (30 if time_period == "30d" else 14)
+        for d in range(min(days_back, 14), -1, -1):
+            day_date = (now - datetime.timedelta(days=d)).strftime("%Y-%m-%d")
+            days_map[day_date] = {"date": day_date, "created": 0, "resolved": 0}
 
     for i in incidents:
         if i.created_at:
@@ -268,6 +330,8 @@ def get_analytics_data(
 
     return {
         "time_period": time_period,
+        "start_date": start_date or (start_dt.strftime("%Y-%m-%d") if start_dt else None),
+        "end_date": end_date or (end_dt.strftime("%Y-%m-%d") if end_dt else None),
         "summary": {
             "total_tickets": total_incidents,
             "open_tickets": open_count,

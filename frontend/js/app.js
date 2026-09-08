@@ -9140,6 +9140,10 @@ function openExportModal(ticketType = 'incidents') {
     ]
   };
   const availableColumns = defaultColumnsMap[ticketType] || defaultColumnsMap['incidents'];
+  const isCustomActive = typeof currentAnalyticsPeriod !== 'undefined' && currentAnalyticsPeriod === 'custom';
+  const prefillPeriod = isCustomActive ? 'custom' : ((typeof currentAnalyticsPeriod !== 'undefined' && currentAnalyticsPeriod) || '30d');
+  const prefillStart = (typeof currentAnalyticsStartDate !== 'undefined' && currentAnalyticsStartDate) || '';
+  const prefillEnd = (typeof currentAnalyticsEndDate !== 'undefined' && currentAnalyticsEndDate) || '';
 
   document.getElementById('modalContainer').innerHTML = `
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -9156,24 +9160,24 @@ function openExportModal(ticketType = 'incidents') {
           <div>
             <label class="block font-semibold text-slate-400 mb-1">Time Period *</label>
             <select id="export_time_period" onchange="toggleCustomDateInputs()" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2.5 text-xs font-semibold">
-              <option value="today">Today</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="30d" selected>Last 30 Days</option>
-              <option value="90d">Last 90 Days</option>
-              <option value="1y">Last 1 Year</option>
-              <option value="all">All Time (Complete Historical Archive)</option>
-              <option value="custom">Custom Date Range...</option>
+              <option value="today" ${prefillPeriod === 'today' ? 'selected' : ''}>Today</option>
+              <option value="7d" ${prefillPeriod === '7d' ? 'selected' : ''}>Last 7 Days</option>
+              <option value="30d" ${prefillPeriod === '30d' ? 'selected' : ''}>Last 30 Days</option>
+              <option value="90d" ${prefillPeriod === '90d' ? 'selected' : ''}>Last 90 Days</option>
+              <option value="1y" ${prefillPeriod === '1y' ? 'selected' : ''}>Last 1 Year</option>
+              <option value="all" ${prefillPeriod === 'all' ? 'selected' : ''}>All Time (Complete Historical Archive)</option>
+              <option value="custom" ${prefillPeriod === 'custom' ? 'selected' : ''}>Custom Date Range...</option>
             </select>
           </div>
 
-          <div id="customDateRangeInputs" class="hidden grid grid-cols-2 gap-3 pt-1">
+          <div id="customDateRangeInputs" class="${prefillPeriod === 'custom' ? 'grid' : 'hidden'} grid-cols-2 gap-3 pt-1">
             <div>
               <label class="block font-semibold text-slate-400 mb-1">Start Date</label>
-              <input type="date" id="export_start_date" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2 text-xs">
+              <input type="date" id="export_start_date" value="${prefillStart}" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2 text-xs">
             </div>
             <div>
               <label class="block font-semibold text-slate-400 mb-1">End Date</label>
-              <input type="date" id="export_end_date" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2 text-xs">
+              <input type="date" id="export_end_date" value="${prefillEnd}" class="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2 text-xs">
             </div>
           </div>
 
@@ -9283,6 +9287,8 @@ function triggerDownload(ticketType) {
 
 let activeAnalyticsTab = 'live';
 let currentAnalyticsPeriod = '30d';
+let currentAnalyticsStartDate = '';
+let currentAnalyticsEndDate = '';
 
 async function renderAnalyticsDashboardView(container) {
   container.innerHTML = `
@@ -9335,7 +9341,12 @@ async function loadLiveAnalytics() {
   if (!container) return;
 
   try {
-    const res = await fetch(`${API_BASE}/dashboard/analytics?time_period=${currentAnalyticsPeriod}`, {
+    let url = `${API_BASE}/dashboard/analytics?time_period=${encodeURIComponent(currentAnalyticsPeriod)}`;
+    if (currentAnalyticsPeriod === 'custom') {
+      if (currentAnalyticsStartDate) url += `&start_date=${encodeURIComponent(currentAnalyticsStartDate)}`;
+      if (currentAnalyticsEndDate) url += `&end_date=${encodeURIComponent(currentAnalyticsEndDate)}`;
+    }
+    const res = await fetch(url, {
       headers: { 'X-User-ID': state.currentUser ? state.currentUser.id.toString() : '1' }
     });
     const d = await res.json();
@@ -9345,15 +9356,36 @@ async function loadLiveAnalytics() {
       <div class="space-y-6 animate-fade-in">
         <!-- Controls Bar -->
         <div class="p-4 rounded-2xl bg-[var(--card-bg)] border border-[var(--border-color)] flex flex-wrap items-center justify-between gap-3 text-xs shadow-sm">
-          <div class="flex items-center space-x-2">
+          <div class="flex flex-wrap items-center gap-2.5">
             <span class="font-semibold text-slate-400">Time Range:</span>
             <div class="inline-flex rounded-xl bg-[var(--bg-tertiary)] p-1 border border-[var(--border-color)]">
-              ${['7d', '30d', '90d', '1y', 'all'].map(p => `
-                <button onclick="setAnalyticsPeriod('${p}')" class="px-3 py-1 rounded-lg text-xs font-semibold ${currentAnalyticsPeriod === p ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-[var(--text-primary)]'} transition-all">
-                  ${p === '7d' ? '7 Days' : (p === '30d' ? '30 Days' : (p === '90d' ? '90 Days' : (p === '1y' ? '1 Year' : 'All Time')))}
+              ${['7d', '30d', '90d', '1y', 'all', 'custom'].map(p => `
+                <button onclick="setAnalyticsPeriod('${p}')" class="px-3 py-1 rounded-lg text-xs font-semibold ${currentAnalyticsPeriod === p ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-[var(--text-primary)]'} transition-all">
+                  ${p === '7d' ? '7 Days' : (p === '30d' ? '30 Days' : (p === '90d' ? '90 Days' : (p === '1y' ? '1 Year' : (p === 'custom' ? 'Custom Range' : 'All Time'))))}
                 </button>
               `).join('')}
             </div>
+
+            <!-- Custom Date Range Picker Inputs -->
+            <div id="analyticsCustomDateControls" class="${currentAnalyticsPeriod === 'custom' ? 'flex' : 'hidden'} flex-wrap items-center gap-2 bg-[var(--bg-tertiary)] p-1 px-2.5 rounded-xl border border-[var(--border-color)] animate-fade-in">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-slate-400 font-semibold">From:</span>
+                <input type="date" id="analytics_start_date" value="${currentAnalyticsStartDate}" class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg px-2 py-0.5 text-xs text-[var(--text-primary)] font-medium focus:outline-none focus:border-purple-500">
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-slate-400 font-semibold">To:</span>
+                <input type="date" id="analytics_end_date" value="${currentAnalyticsEndDate}" class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg px-2 py-0.5 text-xs text-[var(--text-primary)] font-medium focus:outline-none focus:border-purple-500">
+              </div>
+              <button onclick="applyCustomAnalyticsDateRange()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition-colors flex items-center gap-1 shadow-sm">
+                <i data-lucide="filter" class="w-3 h-3"></i>
+                <span>Apply</span>
+              </button>
+            </div>
+            ${currentAnalyticsPeriod === 'custom' && currentAnalyticsStartDate && currentAnalyticsEndDate ? `
+              <span class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                Active Range: ${currentAnalyticsStartDate} → ${currentAnalyticsEndDate}
+              </span>
+            ` : ''}
           </div>
           <div class="flex items-center space-x-2">
             <button onclick="openExportModal('incidents')" class="px-3 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-tertiary)] hover:bg-[var(--card-bg)] font-semibold flex items-center space-x-1.5 text-purple-600 dark:text-purple-300">
@@ -9513,6 +9545,33 @@ async function loadLiveAnalytics() {
 
 function setAnalyticsPeriod(period) {
   currentAnalyticsPeriod = period;
+  if (period === 'custom') {
+    if (!currentAnalyticsStartDate) {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      currentAnalyticsStartDate = d.toISOString().split('T')[0];
+    }
+    if (!currentAnalyticsEndDate) {
+      currentAnalyticsEndDate = new Date().toISOString().split('T')[0];
+    }
+  }
+  loadLiveAnalytics();
+}
+
+function applyCustomAnalyticsDateRange() {
+  const startInput = document.getElementById('analytics_start_date');
+  const endInput = document.getElementById('analytics_end_date');
+  if (startInput && startInput.value) {
+    currentAnalyticsStartDate = startInput.value;
+  }
+  if (endInput && endInput.value) {
+    currentAnalyticsEndDate = endInput.value;
+  }
+  if (currentAnalyticsStartDate && currentAnalyticsEndDate && currentAnalyticsStartDate > currentAnalyticsEndDate) {
+    showToast('Start date cannot be after end date', 'warning');
+    return;
+  }
+  currentAnalyticsPeriod = 'custom';
   loadLiveAnalytics();
 }
 

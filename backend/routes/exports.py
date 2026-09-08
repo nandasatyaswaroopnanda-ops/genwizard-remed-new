@@ -38,14 +38,15 @@ def get_date_cutoff(time_period: str, start_date: Optional[str], end_date: Optio
         start_dt = now - datetime.timedelta(days=90)
     elif time_period == "1y":
         start_dt = now - datetime.timedelta(days=365)
-    elif time_period == "custom" and start_date:
-        try:
-            start_dt = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-        except Exception:
-            pass
+    elif time_period == "custom":
+        if start_date:
+            try:
+                start_dt = datetime.datetime.strptime(start_date[:10], "%Y-%m-%d")
+            except Exception:
+                pass
         if end_date:
             try:
-                end_dt = datetime.datetime.strptime(end_date, "%Y-%m-%d") + datetime.timedelta(days=1)
+                end_dt = datetime.datetime.strptime(end_date[:10], "%Y-%m-%d") + datetime.timedelta(days=1)
             except Exception:
                 pass
     # "all" leaves start_dt and end_dt as None
