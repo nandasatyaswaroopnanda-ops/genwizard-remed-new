@@ -531,10 +531,73 @@ function toggleTheme() {
   safeCreateIcons();
 }
 
+// Detect any active authentication token passed via URL, cookies, or existing IM storage
+function detectExternalAuthToken() {
+  try {
+    // 1. URL search or hash parameters (e.g. /itsm?token=... or /itsm#access_token=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const hash = window.location.hash || '';
+    const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.substring(1) : hash);
+    const urlToken = urlParams.get('token') || urlParams.get('access_token') || urlParams.get('auth_token') || urlParams.get('jwt')
+      || hashParams.get('token') || hashParams.get('access_token');
+    if (urlToken && urlToken.length > 8) {
+      localStorage.setItem('auth_token', urlToken);
+      return urlToken;
+    }
+
+    // 2. LocalStorage keys used by external Identity Management frontends
+    const storageKeys = ['auth_token', 'access_token', 'accessToken', 'token', 'jwt', 'id_token', 'im_token'];
+    for (const k of storageKeys) {
+      const val = localStorage.getItem(k);
+      if (val && typeof val === 'string' && val.length > 8) {
+        return val;
+      }
+    }
+
+    // 3. SessionStorage keys
+    for (const k of storageKeys) {
+      const val = sessionStorage.getItem(k);
+      if (val && typeof val === 'string' && val.length > 8) {
+        return val;
+      }
+    }
+
+    // 4. Nested tokens in user objects in localStorage/sessionStorage
+    for (const uKey of ['user', 'currentUser', 'current_user', 'auth', 'im_user']) {
+      const raw = localStorage.getItem(uKey) || sessionStorage.getItem(uKey);
+      if (raw) {
+        try {
+          const u = JSON.parse(raw);
+          const t = u.token || u.access_token || u.accessToken || u.jwt || u.id_token;
+          if (t && typeof t === 'string' && t.length > 8) {
+            return t;
+          }
+        } catch (e) {}
+      }
+    }
+
+    // 5. Browser cookies
+    if (typeof document !== 'undefined' && document.cookie) {
+      const m = document.cookie.match(/(?:^|;\s*)(?:auth_token|access_token|token|jwt)=([^;]+)/);
+      if (m && m[1]) {
+        return decodeURIComponent(m[1]);
+      }
+    }
+  } catch (err) {
+    console.warn('Error detecting external auth token:', err);
+  }
+  return '';
+}
+
 // --- USER / PERSONA SWITCHING ---
 async function loadCurrentUser() {
+  const detectedToken = detectExternalAuthToken();
+  const authToken = detectedToken || localStorage.getItem('auth_token') || localStorage.getItem('access_token') || '';
+  if (authToken && !localStorage.getItem('auth_token')) {
+    localStorage.setItem('auth_token', authToken);
+  }
+
   const savedUserId = localStorage.getItem('nexus_user_id') || localStorage.getItem('active_user_id') || '1';
-  const authToken = localStorage.getItem('auth_token') || localStorage.getItem('access_token') || '';
   const headers = { 'X-User-ID': savedUserId };
   if (authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;

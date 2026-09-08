@@ -265,3 +265,65 @@ def test_atr_saml_and_im_saml_end_user_parity():
     finally:
         db.close()
 
+
+def test_external_im_authenticated_user_direct_navigation_and_interaction():
+    """
+    Verify that ANY user authenticated in the external Identity Management app:
+    1. Can navigate directly to /itsm without failing.
+    2. Local admin user authenticated from external IM is recognized as itsm_admin and can configure projects.
+    3. Any new/existing employee from external IM is auto-provisioned, gets IM_SAML / ATR_SAML, and can create tickets.
+    4. Supports Authorization header, external JWT tokens, and browser cookies.
+    """
+    import jwt
+    # 1. Local admin user authenticated in external IM
+    external_admin_token = jwt.encode(
+        {"username": "admin", "sub": "1", "email": "admin@enterprise.corp", "roles": ["admin"]},
+        "external-secret-key-123",
+        algorithm="HS256"
+    )
+
+    resp_admin = client.get("/api/auth/current", headers={"Authorization": f"Bearer {external_admin_token}"})
+    assert resp_admin.status_code == 200
+    admin_data = resp_admin.json()
+    assert admin_data["username"] == "admin"
+    assert admin_data["role"] in ["itsm_admin", "administrator"]
+    assert admin_data["project_boundaries"]["is_global_admin"] is True
+
+    # 2. Any regular user from external IM (e.g. employee_99)
+    external_user_token = jwt.encode(
+        {"preferred_username": "sarah_external", "email": "sarah.ext@company.com", "name": "Sarah External"},
+        "external-secret-key-123",
+        algorithm="HS256"
+    )
+
+    resp_user = client.get("/api/auth/current", headers={"Authorization": f"Bearer {external_user_token}"})
+    assert resp_user.status_code == 200
+    user_data = resp_user.json()
+    assert user_data["username"] == "sarah_external"
+    assert user_data["role"] == "itsm_read"
+    assert user_data["project_boundaries"]["is_end_user"] is True
+
+    # Regular user can immediately interact and create tickets without failing
+    incident_resp = client.post("/api/incidents", json={
+        "application_id": 1,
+        "short_description": "Laptop screen flickering",
+        "description": "External user test issue",
+        "priority": "Low",
+        "urgency": "Low",
+        "impact": "Low",
+        "category": "Hardware"
+    }, headers={"Authorization": f"Bearer {external_user_token}"})
+    assert incident_resp.status_code in [200, 201]
+    assert incident_resp.json()["caller_id"] == user_data["id"]
+
+    # 3. Cookie-based authentication (seamless navigation when sharing domain cookies)
+    cookie_token = jwt.encode(
+        {"preferred_username": "cookie_user", "email": "cookie.user@company.com"},
+        "some-idp-secret",
+        algorithm="HS256"
+    )
+    resp_cookie = client.get("/api/auth/current", cookies={"auth_token": cookie_token})
+    assert resp_cookie.status_code == 200
+    assert resp_cookie.json()["username"] == "cookie_user"
+
+

@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 import jwt
-from fastapi import Depends, HTTPException, Header
+from fastapi import Depends, HTTPException, Header, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -240,6 +240,7 @@ def _ensure_local_persona(user_id: int, db: Session) -> Optional[User]:
 
 
 def get_current_user(
+    request: Request = None,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
     x_user_id: Optional[str] = Header(None),
     x_user_name: Optional[str] = Header(None),
@@ -247,9 +248,21 @@ def get_current_user(
     x_user_email: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ) -> User:
-    """Validate bearer token from Identity Service, external IM, or Keycloak SSO, or proxy headers."""
+    """Validate bearer token from Identity Service, external IM, or Keycloak SSO, or proxy headers/cookies."""
+    token = None
     if credentials and credentials.credentials:
         token = credentials.credentials
+    elif request:
+        token = (
+            request.cookies.get("auth_token") or
+            request.cookies.get("access_token") or
+            request.cookies.get("token") or
+            request.cookies.get("jwt") or
+            request.headers.get("x-access-token") or
+            request.headers.get("x-auth-token")
+        )
+
+    if token:
         # 1. Try decoding as Identity Service JWT token
         jwt_secret = os.getenv("JWT_SECRET", os.getenv("ITSM_JWT_SECRET", "nexus-itsm-super-secure-jwt-token-key-2026"))
         try:
@@ -267,24 +280,50 @@ def get_current_user(
             ext_uname = unverified.get("preferred_username") or unverified.get("username") or unverified.get("sub")
             ext_mail = unverified.get("email")
             ext_name = unverified.get("name")
-            if ext_uname and not str(ext_uname).isdigit():
-                user = db.query(User).filter(
-                    (User.username.ilike(str(ext_uname).strip())) |
-                    (User.email.ilike(str(ext_mail).strip()) if ext_mail else False)
-                ).first()
-                if not user:
-                    user = User(
-                        username=str(ext_uname).strip(),
-                        full_name=str(ext_name or ext_uname).replace(".", " ").title(),
-                        email=str(ext_mail) if ext_mail else f"{ext_uname}@enterprise.corp",
-                        role="itsm_read",
-                        active=True
-                    )
-                    db.add(user)
+            ext_uid = unverified.get("user_id") or unverified.get("userId") or unverified.get("id")
+
+            user = None
+            if ext_uid and str(ext_uid).isdigit():
+                user = db.query(User).filter(User.id == int(ext_uid), User.active == True).first()
+
+            if not user and ext_uname and str(ext_uname).isdigit():
+                user = db.query(User).filter(User.id == int(ext_uname), User.active == True).first()
+
+            if not user and ext_uname:
+                user = db.query(User).filter(User.username.ilike(str(ext_uname).strip()), User.active == True).first()
+
+            if not user and ext_mail:
+                user = db.query(User).filter(User.email.ilike(str(ext_mail).strip()), User.active == True).first()
+
+            if not user and ext_uname:
+                u_str = str(ext_uname).lower().strip()
+                token_roles = [str(r).lower() for r in (unverified.get("roles") or unverified.get("realm_access", {}).get("roles", []) or [])]
+                is_admin_user = (u_str == "admin") or any(r in ("admin", "administrator", "itsm_admin", "itsm-admin") for r in token_roles)
+                user = User(
+                    username=str(ext_uname).strip(),
+                    full_name=str(ext_name or ext_uname).replace(".", " ").title(),
+                    email=str(ext_mail) if ext_mail else f"{ext_uname}@enterprise.corp",
+                    role="itsm_admin" if is_admin_user else "itsm_read",
+                    active=True
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+
+                try:
+                    from backend.models import CustomGroup, UserCustomGroup
+                    target_groups = ["itsm_admin", "IM_SAML", "ATR_SAML"] if is_admin_user else ["IM_SAML", "ATR_SAML"]
+                    for s_name in target_groups:
+                        saml_cg = db.query(CustomGroup).filter(CustomGroup.name == s_name).first()
+                        if saml_cg and not db.query(UserCustomGroup).filter(UserCustomGroup.user_id == user.id, UserCustomGroup.custom_group_id == saml_cg.id).first():
+                            db.add(UserCustomGroup(user_id=user.id, custom_group_id=saml_cg.id))
                     db.commit()
                     db.refresh(user)
-                if user:
-                    return user
+                except Exception:
+                    pass
+
+            if user:
+                return user
         except Exception:
             pass
 

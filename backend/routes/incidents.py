@@ -1,6 +1,6 @@
 import datetime
 import json
-from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, and_
 from typing import Optional, List, Dict, Any
@@ -18,11 +18,23 @@ from backend.notification_engine import NotificationEngine
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
 
-def get_session_user(db: Session, x_user_id: Optional[str]) -> User:
-    user_id = 1
-    if x_user_id and x_user_id.isdigit():
-        user_id = int(x_user_id)
-    user = db.query(User).filter(User.id == user_id).first()
+def get_session_user(db: Session, x_user_id: Optional[str] = None, request: Optional[Request] = None) -> User:
+    if x_user_id and str(x_user_id).isdigit():
+        user = db.query(User).filter(User.id == int(x_user_id)).first()
+        if user:
+            return user
+    if request:
+        try:
+            from backend.security import get_current_user
+            auth_header = request.headers.get("authorization")
+            cred = None
+            if auth_header and auth_header.lower().startswith("bearer "):
+                from fastapi.security import HTTPAuthorizationCredentials
+                cred = HTTPAuthorizationCredentials(scheme="Bearer", credentials=auth_header[7:].strip())
+            return get_current_user(request=request, credentials=cred, db=db)
+        except Exception:
+            pass
+    user = db.query(User).filter(User.id == 1).first()
     return user or db.query(User).first()
 
 class IncidentCreateSchema(BaseModel):
@@ -76,10 +88,11 @@ def list_incidents(
     sla_stage: Optional[str] = None,
     search: Optional[str] = None,
     my_tickets: bool = False,
+    request: Request = None,
     x_user_id: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    current_user = get_session_user(db, x_user_id)
+    current_user = get_session_user(db, x_user_id, request=request)
     user_group_ids = [m.group_id for m in current_user.memberships]
 
     query = db.query(Incident)
@@ -156,10 +169,11 @@ def list_incidents(
 @router.post("")
 def create_incident(
     payload: IncidentCreateSchema,
+    request: Request = None,
     x_user_id: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    current_user = get_session_user(db, x_user_id)
+    current_user = get_session_user(db, x_user_id, request=request)
     caller_id = payload.caller_id or current_user.id
 
     # 1. Concurrency-safe unique sequential incident number
