@@ -5592,7 +5592,7 @@ async function deleteKnowledgeArticle(articleId) {
 
 async function renderApplicationsView(container) {
   try {
-    let res = await fetch(`${API_BASE}/api/applications`);
+    let res = await fetch(`${API_BASE}/applications`);
     if (!res.ok) {
       res = await fetch(`${API_BASE}/admin/applications`);
     }
@@ -5650,7 +5650,7 @@ async function renderApplicationsView(container) {
 
 async function renderProjectsView(container) {
   try {
-    let res = await fetch(`${API_BASE}/api/projects`);
+    let res = await fetch(`${API_BASE}/projects`);
     if (!res.ok) {
       res = await fetch(`${API_BASE}/admin/projects`);
     }
