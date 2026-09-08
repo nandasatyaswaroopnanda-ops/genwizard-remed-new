@@ -29,6 +29,7 @@ cp -r backend "${STAGE_DIR}/"
 cp -r frontend "${STAGE_DIR}/"
 cp -r identity_service "${STAGE_DIR}/"
 cp scripts/bootstrap_external_im.py "${STAGE_DIR}/scripts/"
+cp scripts/seed_im_mongo.js "${STAGE_DIR}/scripts/"
 cp Dockerfile "${STAGE_DIR}/"
 cp requirements.txt "${STAGE_DIR}/"
 cp docker-compose.existing-app-addon.yml "${STAGE_DIR}/"
@@ -40,7 +41,6 @@ find "${STAGE_DIR}" -type f -name "*.pyc" -delete 2>/dev/null || true
 find "${STAGE_DIR}" -type f -name ".DS_Store" -delete 2>/dev/null || true
 rm -f "${STAGE_DIR}/identity_service/Dockerfile" 2>/dev/null || true
 rm -rf "${STAGE_DIR}/frontend/static" 2>/dev/null || true
-rm -f "${STAGE_DIR}/scripts/seed_im_mongo.js" 2>/dev/null || true
 
 # Archive strictly the staged files
 tar -czf "${APP_DIR}/${OUTPUT_TAR}" -C "${STAGE_DIR}" .

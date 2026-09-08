@@ -77,6 +77,28 @@ if [[ -n "$CONSUL_CONTAINER" ]]; then
   fi
 fi
 
+# Auto-detect MongoDB container (defaults to 'atr-mongo') & interact directly via Docker CLI
+MONGO_CONTAINER="atr-mongo"
+if [[ -n "$EXISTING_CONTAINERS" ]]; then
+  DETECTED_MONGO=$(echo "$EXISTING_CONTAINERS" | grep -iE 'atr-mongo|mongo' | head -n1 || true)
+  if [[ -n "$DETECTED_MONGO" ]]; then
+    MONGO_CONTAINER="$DETECTED_MONGO"
+  fi
+fi
+
+if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' 2>/dev/null | grep -qE "^${MONGO_CONTAINER}$"; then
+  echo "==> Detected active MongoDB container: '${MONGO_CONTAINER}'"
+  export MONGO_CONTAINER="$MONGO_CONTAINER"
+  export MONGO_HOST="${MONGO_HOST:-$MONGO_CONTAINER}"
+
+  echo "==> Interacting directly with MongoDB container ('${MONGO_CONTAINER}') via Docker CLI..."
+  if docker exec "$MONGO_CONTAINER" mongosh --quiet --eval "db.adminCommand('ping').ok" 2>/dev/null | grep -q '1'; then
+    echo "  ✓ Direct Docker CLI ping to '${MONGO_CONTAINER}' confirmed MongoDB is responsive."
+  elif docker exec "$MONGO_CONTAINER" mongo --quiet --eval "db.adminCommand('ping').ok" 2>/dev/null | grep -q '1'; then
+    echo "  ✓ Direct Docker CLI ping to '${MONGO_CONTAINER}' confirmed MongoDB is responsive."
+  fi
+fi
+
 # 2. Auto-detect & Validate Existing User-Defined Docker Network
 DETECTED_NET=""
 if [[ -n "$EXISTING_CONTAINERS" ]]; then
@@ -195,9 +217,23 @@ while [[ $RETRY -lt $MAX_RETRIES ]]; do
   RETRY=$((RETRY + 1))
 done
 
-# 6. Execute Group & Permission Synchronization INSIDE Container (No host Python needed!)
-echo "==> Synchronizing IM groups, ATR_SAML/IM_SAML & admin privileges (inside container)..."
+# 6. Execute Group & Permission Synchronization
+echo "==> Synchronizing IM groups, ATR_SAML/IM_SAML & admin privileges..."
 sleep 2
+
+# 6a. Direct seed execution inside MongoDB container (atr-mongo) via docker exec
+if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' 2>/dev/null | grep -qE "^${MONGO_CONTAINER}$"; then
+  if [[ -f "$APP_DIR/scripts/seed_im_mongo.js" && -n "${MONGO_PASSWORD:-}" ]]; then
+    echo "  -> Executing direct database seed inside '${MONGO_CONTAINER}' via docker exec..."
+    if docker exec -i "$MONGO_CONTAINER" mongosh -u "${MONGO_USERNAME:-atr}" -p "$MONGO_PASSWORD" --authenticationDatabase admin < "$APP_DIR/scripts/seed_im_mongo.js" >/dev/null 2>&1; then
+      echo "  ✓ Direct mongosh seed execution inside '${MONGO_CONTAINER}' succeeded."
+    elif docker exec -i "$MONGO_CONTAINER" mongo -u "${MONGO_USERNAME:-atr}" -p "$MONGO_PASSWORD" --authenticationDatabase admin < "$APP_DIR/scripts/seed_im_mongo.js" >/dev/null 2>&1; then
+      echo "  ✓ Direct mongo seed execution inside '${MONGO_CONTAINER}' succeeded."
+    fi
+  fi
+fi
+
+# 6b. Bootstrap synchronization inside nexus-itsm-core container
 if docker exec \
   -e ITSM_BOOTSTRAP_ADMIN_PASSWORD="${ITSM_BOOTSTRAP_ADMIN_PASSWORD:-}" \
   -e MONGO_PASSWORD="${MONGO_PASSWORD:-}" \
