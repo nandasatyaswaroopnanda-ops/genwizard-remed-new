@@ -43,8 +43,12 @@ services:
       # Subpath hosting prefix
       - ITSM_SUBPATH=/itsm
       
-      # Platform admin bootstrap fallback (if consul key is not populated)
+      # Platform admin bootstrap credentials (auto-extracted from Consul or provided via env)
       - ITSM_BOOTSTRAP_ADMIN_USERNAME=admin
+      - ITSM_BOOTSTRAP_ADMIN_PASSWORD=${ITSM_BOOTSTRAP_ADMIN_PASSWORD:-}
+      - MONGO_PASSWORD=${MONGO_PASSWORD:-}
+      - MONGO_USERNAME=${MONGO_USERNAME:-}
+      - MONGO_HOST=${MONGO_HOST:-}
       
       # AI Copilot / Knowledge Engine token
       - KM_API_TOKEN=${KM_API_TOKEN:-local_demo_token}

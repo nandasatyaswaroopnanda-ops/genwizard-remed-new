@@ -164,9 +164,10 @@ Run the single production installer on your Docker host:
 ```
 This installer:
 1. **Auto-detects containers & network:** Discovers existing containers (`atr-mongo`, `atr-gateway`, `identity-management`, `consul`, `nginx`), finds their user-defined Docker network, and auto-attaches them so container DNS always works.
-2. **Auto-detects IM port:** Detects whether IM is running on port 8080 or 8001.
-3. **Resilient Launch:** Launches `nexus-itsm-core:latest` with `--add-host host.docker.internal:host-gateway`.
-4. **Automatic Group & Permission Sync:** Executes `bootstrap_external_im.py` inside the container. It authenticates via `atr-gateway` / IM REST APIs, and falls back to direct MongoDB synchronization in `atr-mongo`.
+2. **Direct Consul Container Interaction:** Auto-detects the running Consul container and extracts Spring configuration keys (`admin.password`, `spring.data.mongodb.password`, `username`, `host`) directly via container CLI (`docker exec <consul-container> consul kv get ...`). This extracts credentials instantaneously without requiring HTTP port 8500 to be published on the host.
+3. **Auto-detects IM port:** Detects whether IM is running on port 8080 or 8001.
+4. **Resilient Launch:** Launches `nexus-itsm-core:latest` with `--add-host host.docker.internal:host-gateway` and the extracted Consul configuration pre-loaded.
+5. **Automatic Group & Permission Sync:** Executes `bootstrap_external_im.py` inside the container. It authenticates via `atr-gateway` / IM REST APIs, and falls back to direct MongoDB synchronization in `atr-mongo`.
 
 ---
 

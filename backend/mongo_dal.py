@@ -16,14 +16,45 @@ from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 logger = logging.getLogger("mongo_dal")
 
 def _get_consul_raw(consul_addr: str, key: str, headers: dict) -> str:
-    """Retrieve raw string from Consul KV store."""
+    """Retrieve raw string from Consul KV store across direct docker exec and candidate endpoints."""
+    # 1. Direct Docker CLI inspection if docker command is available
     try:
-        import requests
-        r = requests.get(f"{consul_addr}/v1/kv/{key}", params={"raw": ""}, headers=headers, timeout=3)
-        if r.status_code == 200:
-            return r.text.strip()
-    except Exception as e:
-        logger.debug("Failed to fetch Consul key %s: %s", key, e)
+        import shutil, subprocess
+        if shutil.which("docker"):
+            p = subprocess.run(
+                ["docker", "ps", "--format", "{{.Names}}"],
+                capture_output=True, text=True, timeout=2
+            )
+            if p.returncode == 0:
+                consul_cntrs = [c.strip() for c in p.stdout.splitlines() if "consul" in c.lower()]
+                for cntr in consul_cntrs:
+                    d_res = subprocess.run(
+                        ["docker", "exec", cntr, "consul", "kv", "get", key],
+                        capture_output=True, text=True, timeout=2
+                    )
+                    if d_res.returncode == 0 and d_res.stdout.strip():
+                        return d_res.stdout.strip()
+    except Exception:
+        pass
+
+    # 2. HTTP candidate endpoints
+    candidate_addrs = [
+        consul_addr,
+        "http://consul:8500",
+        "http://host.docker.internal:8500",
+        "http://127.0.0.1:8500",
+        "http://localhost:8500"
+    ]
+    for c_addr in candidate_addrs:
+        if not c_addr:
+            continue
+        try:
+            import requests
+            r = requests.get(f"{c_addr.rstrip('/')}/v1/kv/{key}", params={"raw": ""}, headers=headers, timeout=2)
+            if r.status_code == 200:
+                return r.text.strip()
+        except Exception:
+            pass
     return ""
 
 def resolve_platform_dns() -> str:
@@ -63,6 +94,14 @@ def resolve_mongo_config() -> Tuple[str, str]:
     mongo_db_name = os.getenv("MONGO_DATABASE", "nexus_itsm").strip()
     if mongo_url:
         return mongo_url, mongo_db_name
+
+    mongo_pwd = os.getenv("MONGO_PASSWORD", "").strip()
+    if mongo_pwd:
+        mongo_user = os.getenv("MONGO_USERNAME", os.getenv("MONGO_USER", "atr")).strip()
+        mongo_host = os.getenv("MONGO_HOST", "atr-mongo").strip()
+        mongo_port = os.getenv("MONGO_PORT", "27017").strip()
+        mongo_auth_db = os.getenv("MONGO_AUTH_SOURCE", "admin").strip()
+        return f"mongodb://{mongo_user}:{mongo_pwd}@{mongo_host}:{mongo_port}/{mongo_db_name}?authSource={mongo_auth_db}", mongo_db_name
 
     # Check Consul KV if configured
     consul_addr = os.getenv("CONSUL_HTTP_ADDR", "").rstrip("/")

@@ -42,6 +42,41 @@ IM_HOST="${IM_CONTAINER:-identity-management}"
 IDENTITY_URL="${IDENTITY_SERVICE_URL:-http://${IM_HOST}:${IM_PORT}}"
 echo "==> Target Identity Management: ${IDENTITY_URL} (Container: '${IM_HOST}', Port: ${IM_PORT})"
 
+# Auto-detect Consul container & interact directly via Docker CLI
+CONSUL_CONTAINER=""
+if [[ -n "$EXISTING_CONTAINERS" ]]; then
+  CONSUL_CONTAINER=$(echo "$EXISTING_CONTAINERS" | grep -iE 'consul' | head -n1 || true)
+fi
+
+if [[ -n "$CONSUL_CONTAINER" ]]; then
+  echo "==> Detected active Consul container: '${CONSUL_CONTAINER}'"
+  CONSUL_ADDR="http://${CONSUL_CONTAINER}:8500"
+  export CONSUL_HTTP_ADDR="$CONSUL_ADDR"
+  
+  echo "==> Interacting directly with Consul container ('${CONSUL_CONTAINER}') via Docker CLI..."
+  DIRECT_ADMIN_PASS=$(docker exec "$CONSUL_CONTAINER" consul kv get configuration/aaam-atr-v3/identity-management/admin.password 2>/dev/null || true)
+  if [[ -n "$DIRECT_ADMIN_PASS" ]]; then
+    export ITSM_BOOTSTRAP_ADMIN_PASSWORD="$DIRECT_ADMIN_PASS"
+    echo "  ✓ Extracted admin password directly from Consul container CLI"
+  fi
+  
+  DIRECT_MONGO_PASS=$(docker exec "$CONSUL_CONTAINER" consul kv get configuration/aaam-atr-v3-gateway/spring.data.mongodb.password 2>/dev/null || true)
+  if [[ -n "$DIRECT_MONGO_PASS" ]]; then
+    export MONGO_PASSWORD="$DIRECT_MONGO_PASS"
+    echo "  ✓ Extracted MongoDB password directly from Consul container CLI"
+  fi
+
+  DIRECT_MONGO_USER=$(docker exec "$CONSUL_CONTAINER" consul kv get configuration/aaam-atr-v3-gateway/spring.data.mongodb.username 2>/dev/null || true)
+  if [[ -n "$DIRECT_MONGO_USER" ]]; then
+    export MONGO_USERNAME="$DIRECT_MONGO_USER"
+  fi
+
+  DIRECT_MONGO_HOST=$(docker exec "$CONSUL_CONTAINER" consul kv get configuration/aaam-atr-v3-gateway/spring.data.mongodb.host 2>/dev/null || true)
+  if [[ -n "$DIRECT_MONGO_HOST" ]]; then
+    export MONGO_HOST="$DIRECT_MONGO_HOST"
+  fi
+fi
+
 # 2. Auto-detect & Validate Existing User-Defined Docker Network
 DETECTED_NET=""
 if [[ -n "$EXISTING_CONTAINERS" ]]; then
@@ -87,6 +122,11 @@ export EXISTING_DOCKER_NETWORK="$DOCKER_NETWORK"
 export ITSM_HOST_PORT="$ITSM_HOST_PORT"
 export MONGO_DATABASE="$MONGO_DATABASE"
 export IDENTITY_SERVICE_URL="$IDENTITY_URL"
+export CONSUL_HTTP_ADDR="${CONSUL_ADDR}"
+export ITSM_BOOTSTRAP_ADMIN_PASSWORD="${ITSM_BOOTSTRAP_ADMIN_PASSWORD:-}"
+export MONGO_PASSWORD="${MONGO_PASSWORD:-}"
+export MONGO_USERNAME="${MONGO_USERNAME:-}"
+export MONGO_HOST="${MONGO_HOST:-}"
 echo "==> Using verified Docker network: '${DOCKER_NETWORK}'"
 
 # 3. Load Offline Pre-Built Docker Image (if provided)
@@ -132,6 +172,10 @@ if [[ "$COMPOSE_OK" != "true" ]]; then
     -e IDENTITY_SERVICE_URL="${IDENTITY_URL}" \
     -e ITSM_SUBPATH="/itsm" \
     -e ITSM_BOOTSTRAP_ADMIN_USERNAME="admin" \
+    -e ITSM_BOOTSTRAP_ADMIN_PASSWORD="${ITSM_BOOTSTRAP_ADMIN_PASSWORD:-}" \
+    -e MONGO_PASSWORD="${MONGO_PASSWORD:-}" \
+    -e MONGO_USERNAME="${MONGO_USERNAME:-}" \
+    -e MONGO_HOST="${MONGO_HOST:-}" \
     -e KM_API_TOKEN="local_demo_token" \
     nexus-itsm-core:latest
   echo "✓ Direct docker run on network '${DOCKER_NETWORK}' succeeded."
@@ -154,7 +198,13 @@ done
 # 6. Execute Group & Permission Synchronization INSIDE Container (No host Python needed!)
 echo "==> Synchronizing IM groups, ATR_SAML/IM_SAML & admin privileges (inside container)..."
 sleep 2
-if docker exec nexus-itsm-core python3 /app/scripts/bootstrap_external_im.py >/dev/null 2>&1; then
+if docker exec \
+  -e ITSM_BOOTSTRAP_ADMIN_PASSWORD="${ITSM_BOOTSTRAP_ADMIN_PASSWORD:-}" \
+  -e MONGO_PASSWORD="${MONGO_PASSWORD:-}" \
+  -e MONGO_USERNAME="${MONGO_USERNAME:-}" \
+  -e MONGO_HOST="${MONGO_HOST:-}" \
+  -e CONSUL_HTTP_ADDR="${CONSUL_ADDR}" \
+  nexus-itsm-core python3 /app/scripts/bootstrap_external_im.py >/dev/null 2>&1; then
   echo "  ✓ Identity Management and MongoDB synchronization completed successfully."
 else
   echo "  (!) Note: Synchronization will complete automatically via background startup thread."

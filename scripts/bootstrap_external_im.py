@@ -92,19 +92,52 @@ REQUIRED_GROUPS = [
 ]
 
 def get_consul_kv(key: str) -> dict:
-    """Retrieve raw or JSON value from Consul KV."""
-    if not CONSUL_ADDR:
-        return {}
+    """Retrieve raw or JSON value from Consul KV across direct docker exec and candidate endpoints."""
+    # 1. Direct Docker CLI inspection if docker command is available
     try:
-        headers = {"X-Consul-Token": CONSUL_TOKEN} if CONSUL_TOKEN else {}
-        r = requests.get(f"{CONSUL_ADDR}/v1/kv/{key}", params={"raw": ""}, headers=headers, timeout=3)
-        if r.status_code == 200:
-            try:
-                return r.json()
-            except Exception:
-                return {"value": r.text.strip()}
-    except Exception as e:
-        logger.debug("Consul lookup failed for key %s: %s", key, e)
+        import shutil, subprocess
+        if shutil.which("docker"):
+            p = subprocess.run(
+                ["docker", "ps", "--format", "{{.Names}}"],
+                capture_output=True, text=True, timeout=2
+            )
+            if p.returncode == 0:
+                consul_cntrs = [c.strip() for c in p.stdout.splitlines() if "consul" in c.lower()]
+                for cntr in consul_cntrs:
+                    d_res = subprocess.run(
+                        ["docker", "exec", cntr, "consul", "kv", "get", key],
+                        capture_output=True, text=True, timeout=2
+                    )
+                    if d_res.returncode == 0 and d_res.stdout.strip():
+                        val = d_res.stdout.strip()
+                        try:
+                            return json.loads(val)
+                        except Exception:
+                            return {"value": val}
+    except Exception:
+        pass
+
+    # 2. HTTP candidate endpoints
+    headers = {"X-Consul-Token": CONSUL_TOKEN} if CONSUL_TOKEN else {}
+    candidate_addrs = [
+        CONSUL_ADDR,
+        "http://consul:8500",
+        "http://host.docker.internal:8500",
+        "http://127.0.0.1:8500",
+        "http://localhost:8500"
+    ]
+    for c_addr in candidate_addrs:
+        if not c_addr:
+            continue
+        try:
+            r = requests.get(f"{c_addr.rstrip('/')}/v1/kv/{key}", params={"raw": ""}, headers=headers, timeout=2)
+            if r.status_code == 200:
+                try:
+                    return r.json()
+                except Exception:
+                    return {"value": r.text.strip()}
+        except Exception:
+            pass
     return {}
 
 def resolve_admin_credentials():
