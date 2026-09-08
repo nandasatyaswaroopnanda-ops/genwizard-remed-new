@@ -1,5 +1,5 @@
 # ==============================================================================
-# Nexus ITSM — Internal API Gateway
+# Genwizard ITSM — Internal API Gateway
 # Dispatches incoming requests from Edge Nginx to downstream microservices:
 # - Identity Management Service (/api/id/*)
 # - Core ITSM Backend Service (/api/*, /docs, /openapi.json)

@@ -1,4 +1,4 @@
-"""Nexus ITSM Database Layer — 100% Native MongoDB.
+"""Genwizard ITSM Database Layer — 100% Native MongoDB.
 Eliminates SQLite and PostgreSQL completely. All collections and documents
 are stored natively in MongoDB (database: nexus_itsm).
 """

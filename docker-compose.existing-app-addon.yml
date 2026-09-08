@@ -1,5 +1,5 @@
 # ==============================================================================
-# Nexus ITSM Core — Add-on for Existing Application Stack
+# Genwizard ITSM Core — Add-on for Existing Application Stack
 # ==============================================================================
 # Use this compose file to spin up nexus-itsm-core alongside your existing:
 # - identity-management (IM backend)

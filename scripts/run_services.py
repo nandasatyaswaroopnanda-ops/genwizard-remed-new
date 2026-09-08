@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unified service runner for Nexus ITSM & Identity Management."""
+"""Unified service runner for Genwizard ITSM & Identity Management."""
 import subprocess
 import sys
 import time

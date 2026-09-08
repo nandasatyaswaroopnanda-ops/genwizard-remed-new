@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Nexus ITSM — External Identity Management (IM) Bootstrap & Sync Utility.
+Genwizard ITSM — External Identity Management (IM) Bootstrap & Sync Utility.
 
 This script ensures that an existing Identity Management service has all
-required groups, roles, permissions, and AD group mappings configured for Nexus ITSM:
+required groups, roles, permissions, and AD group mappings configured for Genwizard ITSM:
 1. 'IM_SAML' custom group with scoped end-user permissions (tickets:create, tickets:read_own, tickets:update, applications:read, projects:read).
 2. Standard AD Group / Support DL mappings (ITSM-Admins, Service Desk, ITSM-Fulfillers, Tier1-Support).
 3. Reads admin and MongoDB credentials dynamically from HashiCorp Consul or environment variables.
@@ -353,7 +353,7 @@ def sync_via_mongo(admin_user: str = "admin"):
         return False
 
 def main():
-    logger.info("Starting Nexus ITSM external Identity Management sync...")
+    logger.info("Starting Genwizard ITSM external Identity Management sync...")
     admin_user, admin_pass = resolve_admin_credentials()
     logger.info("Resolved admin username: '%s'", admin_user)
 

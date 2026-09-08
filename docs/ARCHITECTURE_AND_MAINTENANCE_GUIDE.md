@@ -1,6 +1,6 @@
-# Nexus ITSM Core — Complete Architecture, Codebase & Maintenance Reference Guide
+# Genwizard ITSM Core — Complete Architecture, Codebase & Maintenance Reference Guide
 
-This document serves as the **definitive technical reference, installation manual, and codebase maintenance guide** for the **Nexus ITSM** platform. It details the complete system architecture, step-by-step installation and post-installation procedures for environments where **NGINX and existing services are already running**, file-by-file code responsibilities, core operational engines, and day-to-day developer recipes for ongoing platform maintenance.
+This document serves as the **definitive technical reference, installation manual, and codebase maintenance guide** for the **Genwizard ITSM** platform. It details the complete system architecture, step-by-step installation and post-installation procedures for environments where **NGINX and existing services are already running**, file-by-file code responsibilities, core operational engines, and day-to-day developer recipes for ongoing platform maintenance.
 
 > 💡 **For Executive & Leadership Presentation:**
 > If you are presenting to C-suite executives, VPs, or IT leadership, please also reference **[`EXECUTIVE_ARCHITECTURE_AND_SERVICENOW_COMPARISON.md`](EXECUTIVE_ARCHITECTURE_AND_SERVICENOW_COMPARISON.md)** for the side-by-side ServiceNow feature matrix, 3-year TCO/ROI financial breakdown (\$2.16M savings), and executive migration roadmap.
@@ -53,7 +53,7 @@ graph TD
     User["End-User / Engineer (Browser)"] -->|HTTPS /itsm| NGINX["Perimeter NGINX (Port 443/80 - Existing)"]
     NGINX -->|Reverse Proxy /itsm/ or /api/| CORE["nexus-itsm-core (Port 8000)"]
     
-    subgraph "Nexus ITSM Container / Service"
+    subgraph "Genwizard ITSM Container / Service"
         CORE --> ROUTE["6-Tier Routing Engine"]
         CORE --> SLA["Multi-Calendar SLA Engine"]
         CORE --> WF["Workflow & State Engine"]
@@ -166,7 +166,7 @@ If the existing environment runs Python directly on the host rather than inside 
 2. **Create Systemd Service File (`/etc/systemd/system/nexus-itsm.service`):**
    ```ini
    [Unit]
-   Description=Nexus ITSM Control Plane Service
+   Description=Genwizard ITSM Control Plane Service
    After=network.target nginx.service
 
    [Service]
@@ -198,10 +198,10 @@ If the existing environment runs Python directly on the host rather than inside 
 
 ## 3. Step-by-Step Post-Installation Guide (Instances with Existing NGINX)
 
-When NGINX is already running on the instance (handling SSL termination on ports 80/443 and serving existing applications like Identity Management or ATR Gateway), follow these exact steps to route traffic to Nexus ITSM without any port conflict.
+When NGINX is already running on the instance (handling SSL termination on ports 80/443 and serving existing applications like Identity Management or ATR Gateway), follow these exact steps to route traffic to Genwizard ITSM without any port conflict.
 
 ### 3.1 Step 1: Health Check & Process Verification
-Confirm that Nexus ITSM is running and accessible locally:
+Confirm that Genwizard ITSM is running and accessible locally:
 ```bash
 # 1. Verify process/container
 curl -s http://127.0.0.1:8000/health | jq .
@@ -221,14 +221,14 @@ curl -s http://127.0.0.1:8000/api/applications | jq '.[0].name'
 
 ### 3.2 Step 2: Existing NGINX Configuration & Reverse Proxy Setup
 
-Nexus ITSM is built to run cleanly under the subpath `/itsm/` (with API calls routed to `/api/` or `/itsm/api/`).
+Genwizard ITSM is built to run cleanly under the subpath `/itsm/` (with API calls routed to `/api/` or `/itsm/api/`).
 
 #### Scenario A: NGINX Runs in a Docker Container (`nginx`)
 Edit your existing NGINX site configuration (e.g. `/etc/nginx/conf.d/default.conf` or host volume mounted to NGINX):
 
 ```nginx
 # ==============================================================================
-# Nexus ITSM Reverse Proxy Configuration
+# Genwizard ITSM Reverse Proxy Configuration
 # Add inside the existing 'server { listen 443 ssl; ... }' block
 # ==============================================================================
 
@@ -329,7 +329,7 @@ Because zero hardcoded Active Directory groups are pre-configured, map your orga
 
 ### 3.4 Step 4: Knowledge Management (KM) & AI Integration Setup
 Configure external Knowledge Management and AI copilot settings:
-1. Open Nexus ITSM in your browser (`https://<domain>/itsm/`).
+1. Open Genwizard ITSM in your browser (`https://<domain>/itsm/`).
 2. Navigate to **Consul KV & KM Config** (`#/admin/consul`) or **AI Integration & Analytics** (`#/admin/ai`).
 3. Configure your environment parameters:
    - **KM App Base URL:** (e.g. `https://km.internal.company.com`) — *Clearly displayed for reference*.
@@ -633,7 +633,7 @@ docker exec atr-mongo mongorestore -u atr -p <password> --authenticationDatabase
 ### Common Troubleshooting Runbook
 
 1. **Issue: NGINX returns `502 Bad Gateway` on `/itsm/` or `/api/`**
-   - *Cause:* Nexus ITSM backend is not running or listening on port 8000, or NGINX cannot resolve `nexus-itsm-core`.
+   - *Cause:* Genwizard ITSM backend is not running or listening on port 8000, or NGINX cannot resolve `nexus-itsm-core`.
    - *Fix:* Check container: `docker ps --filter "name=nexus-itsm-core"`. If NGINX runs on the host, ensure `proxy_pass` targets `http://127.0.0.1:8000/`. If NGINX runs in Docker, ensure NGINX and `nexus-itsm-core` share the same Docker network.
 
 2. **Issue: Container exits or fails to start with Mongo connection error**
@@ -647,3 +647,27 @@ docker exec atr-mongo mongorestore -u atr -p <password> --authenticationDatabase
 4. **Issue: End users see administrator navigation items**
    - *Cause:* User's SAML/SSO claims assigned them to a support group.
    - *Fix:* Check user's assigned DLs in IM (`/identity-management/ad-groups` or `/adGroups`). Remove them from support DLs so they receive the default `IM_SAML` end-user role.
+
+
+
+   service_now_ai/
+├── backend/
+│   ├── models.py             # Single source of truth for SQLAlchemy data models
+│   ├── database.py           # DB connection & session factory (SQLite/PostgreSQL)
+│   ├── routing_engine.py     # Clean 6-tier routing engine (App, Project L2/L3, Category)
+│   ├── sla_engine.py         # Dedicated SLA calculation & breach monitoring
+│   ├── notification_engine.py# In-app and outbound notification dispatcher
+│   ├── security.py           # RBAC, project boundary evaluation & scope checks
+│   └── routes/               # Modular REST endpoints by functional domain:
+│       ├── incidents.py          # Incident lifecycle & workflows
+│       ├── service_requests.py   # Catalog requests & manager approvals
+│       ├── changes.py            # Change management & CAB approvals
+│       ├── admin_applications.py # App management & category configuration
+│       ├── admin_projects.py     # Project management & automatic L2/L3 queue setup
+│       ├── admin_groups.py       # Assignment groups & user memberships
+│       └── dashboard.py          # Operational metrics, MTTR & closure analytics
+├── frontend/
+│   ├── index.html            # Clean semantic UI shell
+│   └── js/app.js             # Client SPA with centralized state, reactive modals & routing
+├── tests/                    # 75 automated test suites for continuous regression prevention
+└── package-addon.sh          # One-command lightweight distribution bundler

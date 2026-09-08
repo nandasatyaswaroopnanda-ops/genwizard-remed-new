@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Nexus ITSM Kubernetes Cluster Installer
+# Genwizard ITSM Kubernetes Cluster Installer
 # Deploys modular microservices to Kubernetes:
 # - Namespace & ServiceAccounts
 # - HashiCorp Consul Service
@@ -74,7 +74,7 @@ ADMIN_PASS="$(make_secret)"
 MONGO_PASS="$(make_secret)"
 KM_PASS="$(make_secret)"
 
-echo "==> Deploying Nexus ITSM to Kubernetes namespace: ${NAMESPACE}"
+echo "==> Deploying Genwizard ITSM to Kubernetes namespace: ${NAMESPACE}"
 kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 
 # Generate populated manifests in a temp directory
@@ -115,7 +115,7 @@ kubectl exec -n "${NAMESPACE}" "${CONSUL_POD}" -- consul kv put nexus-itsm/km/co
 cat <<EOF
 
 ================================================================================
-           NEXUS ITSM KUBERNETES DEPLOYMENT COMPLETED SUCCESSFULLY
+           GENWIZARD ITSM KUBERNETES DEPLOYMENT COMPLETED SUCCESSFULLY
 ================================================================================
 Namespace:                ${NAMESPACE}
 Platform URL:             ${APP_URL}

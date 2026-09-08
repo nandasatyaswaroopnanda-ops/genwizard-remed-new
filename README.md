@@ -1,11 +1,11 @@
-# Nexus ITSM — Enterprise IT Service Management Platform & Control Plane
+# Genwizard ITSM — Enterprise IT Service Management Platform & Control Plane
 
-Nexus ITSM is a next-generation IT Service Management (ITSM) control plane inspired by ServiceNow, designed from the ground up to make **Project → Assignment Group → SLA Policy** a first-class, dynamic configuration chain throughout the entire platform.
+Genwizard ITSM is a next-generation IT Service Management (ITSM) control plane inspired by ServiceNow, designed from the ground up to make **Project → Assignment Group → SLA Policy** a first-class, dynamic configuration chain throughout the entire platform.
 
-Nexus features a zero-code administration control plane, a 6-tier assignment routing engine, multi-version SLA engine with business calendar support, full Incident/Request/Change workflows, role-based access control, universal multi-project selection with cascading filters, custom timezone and date range engine, and a first-class **AI Knowledge Assistant / Support Copilot** integrating with enterprise ChatCompletion APIs.
+Genwizard features a zero-code administration control plane, a 6-tier assignment routing engine, multi-version SLA engine with business calendar support, full Incident/Request/Change workflows, role-based access control, universal multi-project selection with cascading filters, custom timezone and date range engine, and a first-class **AI Knowledge Assistant / Support Copilot** integrating with enterprise ChatCompletion APIs.
 
 > ### 📚 Core Documentation Guides
-> - **[Executive Architecture & Platform Comparison (ServiceNow vs. Nexus ITSM)](docs/EXECUTIVE_ARCHITECTURE_AND_SERVICENOW_COMPARISON.md)**: Leadership-level decision brief, comprehensive side-by-side comparison matrix, 3-year TCO & ROI model (\$2.16M savings), and architecture blueprints.
+> - **[Executive Architecture & Platform Comparison (ServiceNow vs. Genwizard ITSM)](docs/EXECUTIVE_ARCHITECTURE_AND_SERVICENOW_COMPARISON.md)**: Leadership-level decision brief, comprehensive side-by-side comparison matrix, 3-year TCO & ROI model (\$2.16M savings), and architecture blueprints.
 > - **[Complete Architecture, Codebase & Maintenance Reference Guide](docs/ARCHITECTURE_AND_MAINTENANCE_GUIDE.md)**: Deep dive into all source code files (`backend/`, `frontend/`, `identity_service/`, `scripts/`, `deploy/`), core engines, developer maintenance playbooks, day-to-day operations CLI cheat sheet, and step-by-step post-installation guide for instances where NGINX and existing stacks are already running.
 > - **[Turnkey Integration Guide for Existing Application Stack](docs/EXISTING_APP_INTEGRATION_GUIDE.md)**: Production deployment instructions alongside `atr-mongo`, `identity-management`, `consul`, and `nginx` with zero port conflicts.
 
@@ -21,7 +21,7 @@ Admin-only APIs configure the operational model:
 
 An assignment group may have any number of DLs. Every DL is configured as either `support` or `administrator`, independently of its notification setting. Configure Keycloak's groups mapper to emit each member DL email (for example `/payments-support@accenture.com`) in `groups` or `distribution_lists`; the portal maps that membership to the configured support/admin privilege.
 
-MongoDB is the exclusive, primary datastore across the entire Nexus ITSM platform (configured via `MONGO_URL` and `MONGO_DATABASE`). There is zero dependency on SQLite or PostgreSQL. All relational tables (Incidents, Service Requests, Changes, Applications, Projects, Assignment Groups, SLAs, Routing Rules, Taxonomy, Users, Custom Groups, AD Mappings, Audits, etc.) are stored natively as BSON documents within the `nexus_itsm` database under user `mongo-atr`. Atomic sequential ticket IDs are guaranteed via MongoDB `$inc` counters, allowing seamless multi-pod scalability in Kubernetes.
+MongoDB is the exclusive, primary datastore across the entire Genwizard ITSM platform (configured via `MONGO_URL` and `MONGO_DATABASE`). There is zero dependency on SQLite or PostgreSQL. All relational tables (Incidents, Service Requests, Changes, Applications, Projects, Assignment Groups, SLAs, Routing Rules, Taxonomy, Users, Custom Groups, AD Mappings, Audits, etc.) are stored natively as BSON documents within the `nexus_itsm` database under user `mongo-atr`. Atomic sequential ticket IDs are guaranteed via MongoDB `$inc` counters, allowing seamless multi-pod scalability in Kubernetes.
 
 For the KM integration, configure the IM endpoint and client credentials in the AI admin API using `env:NAME` secret references. The service first exchanges the IM credentials for a short-lived token and exposes it only as `{{short_token}}` while interpolating the KM payload. The short token is never stored in the database or returned from an API.
 

@@ -1,4 +1,4 @@
-"""Nexus ITSM — High-Performance Native MongoDB Data Access Layer (DAL).
+"""Genwizard ITSM — High-Performance Native MongoDB Data Access Layer (DAL).
 Provides 100% MongoDB document persistence for all platform entities:
 Users, Incidents, ServiceRequests, ChangeRequests, Applications, Projects,
 AssignmentGroups, RoutingRules, SLAPolicies, Calendars, Taxonomy, and SSO/Identity.

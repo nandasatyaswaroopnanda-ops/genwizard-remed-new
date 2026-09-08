@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Nexus ITSM — Existing Application Stack Installer (AWS EC2 / Docker)
+# Genwizard ITSM — Existing Application Stack Installer (AWS EC2 / Docker)
 # ==============================================================================
-# Deploys Nexus ITSM alongside your existing:
+# Deploys Genwizard ITSM alongside your existing:
 # - identity-management (:8080 / :8001) & identity-management-client
 # - atr-mongo (MongoDB with user 'atr')
 # - consul (:8500)
@@ -17,7 +17,7 @@ MONGO_DATABASE="${MONGO_DATABASE:-nexus_itsm}"
 DOCKER_NETWORK="${EXISTING_DOCKER_NETWORK:-}"
 
 echo "================================================================================"
-echo "    NEXUS ITSM — EXISTING APPLICATION STACK ONBOARDING & INSTALLER"
+echo "    GENWIZARD ITSM — EXISTING APPLICATION STACK ONBOARDING & INSTALLER"
 echo "================================================================================"
 
 # 1. Auto-detect Identity Management Port (8080 vs 8001)
@@ -90,7 +90,7 @@ elif [[ -f "$APP_DIR/nexus-itsm-core-image.tar" ]]; then
 fi
 
 # 4. Launch nexus-itsm-core Container (with resilient fallback)
-echo "==> Starting Nexus ITSM Core container on network '${DOCKER_NETWORK}'..."
+echo "==> Starting Genwizard ITSM Core container on network '${DOCKER_NETWORK}'..."
 COMPOSE_OK=false
 
 # Try compose up first
@@ -168,7 +168,7 @@ fi
 cat <<SUMMARY
 
 ================================================================================
-          NEXUS ITSM SUCCESSFULLY INSTALLED ON EXISTING STACK
+          GENWIZARD ITSM SUCCESSFULLY INSTALLED ON EXISTING STACK
 ================================================================================
 Status:               Active & Connected
 Host Port:            http://localhost:${ITSM_HOST_PORT} (or /itsm via perimeter Nginx)

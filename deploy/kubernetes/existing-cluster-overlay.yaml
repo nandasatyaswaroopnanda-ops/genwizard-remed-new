@@ -1,5 +1,5 @@
 # ==============================================================================
-# Nexus ITSM Core — Kubernetes Overlay for Existing Application Cluster
+# Genwizard ITSM Core — Kubernetes Overlay for Existing Application Cluster
 # ==============================================================================
 # Deploys nexus-itsm-core into an existing Kubernetes namespace alongside:
 # - identity-management

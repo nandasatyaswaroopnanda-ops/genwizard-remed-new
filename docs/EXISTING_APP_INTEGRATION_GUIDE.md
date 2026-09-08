@@ -1,6 +1,6 @@
-# Nexus ITSM Core — Turnkey Integration Guide for Existing Application Stack
+# Genwizard ITSM Core — Turnkey Integration Guide for Existing Application Stack
 
-This guide details how to deploy the **Nexus ITSM Core** image (`nexus-itsm-core:latest`) on top of an existing application stack already running:
+This guide details how to deploy the **Genwizard ITSM Core** image (`nexus-itsm-core:latest`) on top of an existing application stack already running:
 - **`identity-management`**: Existing IM backend
 - **`identity-management-client`**: Existing IM frontend
 - **`nginx`**: Perimeter reverse proxy
@@ -51,7 +51,7 @@ In your Identity Management service:
 2. **AD Groups are DLs**: Active Directory groups are the Distribution Lists (DLs) added to IM.
 3. **Groups are Attached to DLs**: To each AD Group (DL), one or more permission-bearing Groups are attached.
 
-### Core Permission-Bearing Groups Configured for Nexus ITSM:
+### Core Permission-Bearing Groups Configured for Genwizard ITSM:
 
 | Group Name | Purpose | Attached Permissions (Simplified, No Colons) |
 |---|---|---|
@@ -196,14 +196,14 @@ kubectl apply -f deploy/kubernetes/existing-cluster-overlay.yaml
 
 ## 4. Routing Configuration for Instances with Existing NGINX
 
-When NGINX is already running on the instance (e.g. handling SSL on port 80/443 and routing to `identity-management`, `atr-gateway`, etc.), Nexus ITSM routes traffic cleanly under `/itsm/` and `/api/` with zero port conflicts.
+When NGINX is already running on the instance (e.g. handling SSL on port 80/443 and routing to `identity-management`, `atr-gateway`, etc.), Genwizard ITSM routes traffic cleanly under `/itsm/` and `/api/` with zero port conflicts.
 
 ### Scenario A: NGINX Runs in Docker (`nginx` container on same network)
 Add the following blocks inside your existing NGINX `server { listen 443 ssl; ... }` block:
 
 ```nginx
 # ==============================================================================
-# Nexus ITSM Reverse Proxy Configuration (Docker Network)
+# Genwizard ITSM Reverse Proxy Configuration (Docker Network)
 # ==============================================================================
 
 # 1. ITSM Web Application & Static Assets
@@ -329,7 +329,7 @@ spring:
 
 ## 6. How Existing MongoDB is Utilized & Updated
 
-Nexus ITSM is **100% native MongoDB** (`backend/mongo_dal.py`) and uses the existing `atr-mongo` instance for all persistence:
+Genwizard ITSM is **100% native MongoDB** (`backend/mongo_dal.py`) and uses the existing `atr-mongo` instance for all persistence:
 
 1. **Identity Management (IM) Collections**:
    - `custom_groups` / `groups`: Contains `IM_SAML`, `itsm_admin`, `itsm_user`, `itsm_read`, and project scoped groups with clean permissions (`ticket_create`, `ticket_read_own`, `ticket_update`, `applications_read`, `projects_read`).

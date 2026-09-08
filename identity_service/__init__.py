@@ -1,1 +1,1 @@
-"""Nexus ITSM Identity Management Service."""
+"""Genwizard ITSM Identity Management Service."""

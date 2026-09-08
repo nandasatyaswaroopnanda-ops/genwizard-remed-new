@@ -1,8 +1,8 @@
-# Nexus ITSM vs. ServiceNow — Executive Architecture & Platform Comparison
+# Genwizard ITSM vs. ServiceNow — Executive Architecture & Platform Comparison
 
 **Audience:** Chief Information Officer (CIO), Chief Technology Officer (CTO), VP of Infrastructure & Operations, Enterprise Architecture Board, and IT Procurement Leadership  
 **Document Classification:** Technical Strategy & Executive Decision Brief  
-**Platform Version:** Nexus ITSM v2.10.0  
+**Platform Version:** Genwizard ITSM v2.10.0  
 
 ---
 
@@ -13,13 +13,13 @@ Traditional enterprise IT Service Management (ITSM) platforms—most prominently
 - **Extreme Customization Debt & Upgrade Friction:** Semi-annual release cycles ("Utah", "Vancouver", "Washington") regularly break custom script includes, business rules, and UI policies, requiring costly system-integrator retainers.
 - **Architectural Rigidity & Vendor Lock-In:** Proprietary GlideScript/JavaScript engines, database table locks on relational backends, and clunky on-prem MID server proxies.
 
-**Nexus ITSM** was architected from the ground up as a **cloud-native, high-performance, open-standards ITSM control plane**. It provides full operational parity with ServiceNow's core ITIL capabilities (Incident, Service Request, Change Management, CMDB, SLA Governance, and AI Copilot) while eliminating the million-dollar licensing tax and operational fragility.
+**Genwizard ITSM** was architected from the ground up as a **cloud-native, high-performance, open-standards ITSM control plane**. It provides full operational parity with ServiceNow's core ITIL capabilities (Incident, Service Request, Change Management, CMDB, SLA Governance, and AI Copilot) while eliminating the million-dollar licensing tax and operational fragility.
 
 ### Key Executive Metrics at a Glance
 
 ```
 ┌──────────────────────────────────────┬──────────────────────────────────────┐
-│        ServiceNow Enterprise         │              Nexus ITSM              │
+│        ServiceNow Enterprise         │              Genwizard ITSM              │
 ├──────────────────────────────────────┼──────────────────────────────────────┤
 │ 3-Year TCO: $1.2M – $3.5M+           │ 3-Year TCO: Near-Zero License Cost   │
 │ Pricing Model: Per-Fulfiller / Mo.   │ Pricing Model: Unlimited Users / CPU │
@@ -70,21 +70,21 @@ graph TD
 
 ---
 
-### 2.2 Nexus ITSM Modern Cloud-Native Architecture
+### 2.2 Genwizard ITSM Modern Cloud-Native Architecture
 
-Nexus ITSM operates as a lightweight, containerized control plane that embeds directly into your existing infrastructure:
+Genwizard ITSM operates as a lightweight, containerized control plane that embeds directly into your existing infrastructure:
 
 ```mermaid
 graph TD
     Client["Client Web Browser (Desktop / Mobile)"] -->|HTTPS (Port 443)| NGINX["Existing Perimeter NGINX"]
     
     subgraph "Existing Application Stack"
-        NGINX -->|/itsm/ & /api/| CORE["Nexus ITSM Core Container (:8000)"]
+        NGINX -->|/itsm/ & /api/| CORE["Genwizard ITSM Core Container (:8000)"]
         NGINX -->|/identity-management/**| IM_BACKEND["Identity Management Backend (:8001)"]
         NGINX -->|/atr-gateway/**| GATEWAY["ATR Gateway (:8080)"]
     end
 
-    subgraph "Nexus ITSM Modular Core Engine (:8000)"
+    subgraph "Genwizard ITSM Modular Core Engine (:8000)"
         CORE --> ROUTING["6-Tier Waterfall Routing Engine"]
         CORE --> SLA_ENG["Multi-Calendar SLA Engine (24x7 / 9x5)"]
         CORE --> WF_ENG["State Machine Lifecycle Engine"]
@@ -100,7 +100,7 @@ graph TD
     end
 ```
 
-**Key Architectural Strengths of Nexus ITSM:**
+**Key Architectural Strengths of Genwizard ITSM:**
 1. **Coexistence with Zero Footprint:** Runs seamlessly behind your existing NGINX reverse proxy on subpath `/itsm/` without port conflicts or dedicated infrastructure.
 2. **Native MongoDB Persistence (`nexus_itsm`):** Stores tickets, SLAs, and CMDB as native BSON documents inside the existing `atr-mongo` instance. Zero SQLite or PostgreSQL dependencies.
 3. **Atomic Scalability:** Uses MongoDB atomic `$inc` counters for sequential ticket numbering (`INC-10001`), supporting horizontal multi-pod scaling across Kubernetes clusters with zero table locks.
@@ -110,7 +110,7 @@ graph TD
 
 ## 3. Comprehensive Feature & Architectural Comparison Matrix
 
-| Dimension | ServiceNow Enterprise | Nexus ITSM Core | Executive Strategic Impact |
+| Dimension | ServiceNow Enterprise | Genwizard ITSM Core | Executive Strategic Impact |
 | :--- | :--- | :--- | :--- |
 | **Licensing Model** | Strict per-fulfiller subscription ($100–$150/user/month). Additional fees for ITSM Pro/Enterprise. | **100% Free & Open In-House Asset.** Unlimited fulfillers, agents, and requesters. | **Saves $500K–$2M+ annually** on software licensing alone. |
 | **Custom Table Penalties** | Charges per custom table after first 50. High penalties for custom data schemas. | **Zero schema constraints.** Native MongoDB document schema flexibility. | Eliminates license penalties for extending data models. |
@@ -131,7 +131,7 @@ graph TD
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       NEXUS ITSM CORE INNOVATIONS                           │
+│                       GENWIZARD ITSM CORE INNOVATIONS                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  1. 6-Tier Waterfall Routing Engine with Interactive Simulator             │
 │  2. Immutable SLA Versioning with Pause Clocks & Calendar Holidays          │
@@ -146,7 +146,7 @@ graph TD
 
 In ServiceNow, directing a ticket to the correct team requires either writing JavaScript in **Business Rules**, configuring **Assignment Rules**, or building visual workflows in **Flow Designer**. When conditions conflict, tickets bounce between queues ("ticket ping-pong").
 
-**Nexus ITSM** solves this with an unambiguous, deterministic 6-tier waterfall hierarchy:
+**Genwizard ITSM** solves this with an unambiguous, deterministic 6-tier waterfall hierarchy:
 
 ```
 [Tier 1: Exact Match]      Project + Application + Category + Subcategory
@@ -178,7 +178,7 @@ In enterprise environments supporting multiple business units or client applicat
 - It degrades system performance by appending complex `sys_domain` WHERE clauses to every SQL query.
 - Users cannot easily view aggregated dashboards across multiple domains without elevated domain-switching rights.
 
-**Nexus ITSM** treats Multi-Project as a first-class, dynamic matrix:
+**Genwizard ITSM** treats Multi-Project as a first-class, dynamic matrix:
 - **Universal Multi-Project Selection:** Fulfillers can select one, multiple, or all projects simultaneously across Unified Tickets, Incidents, Service Requests, and Change Requests.
 - **Dynamic Cascading Filters:** Selecting projects immediately filters available applications to those supporting *any* selected project, which in turn filters assignment groups.
 - **Telemetry Scope Badge:** Real-time visual feedback updates counts and KPIs based on the active multi-project scope.
@@ -192,7 +192,7 @@ In ServiceNow, if an organization renegotiates an SLA from 4 hours to 2 hours, e
 1. Retroactively breaches previously resolved tickets, destroying historical compliance audits, OR
 2. Requires creating duplicate SLA definitions with complex date condition scripts.
 
-**Nexus ITSM** features native **Immutable SLA Versioning**:
+**Genwizard ITSM** features native **Immutable SLA Versioning**:
 - Modifying an active SLA policy automatically archives the current version and creates a new version (`v2`) with an `effective_from` timestamp.
 - All historical tickets remain bound to the exact SLA version under which they were created (`v1`).
 - **Calendar-Aware Business Clocks:** Supports 24x7 and 9x5 business schedules while automatically deducting official company holidays.
@@ -202,7 +202,7 @@ In ServiceNow, if an organization renegotiates an SLA from 4 hours to 2 hours, e
 
 ### 4.4 Real-Time AI Copilot vs. ServiceNow Now Assist
 
-| Capability | ServiceNow "Now Assist" | Nexus ITSM AI Copilot |
+| Capability | ServiceNow "Now Assist" | Genwizard ITSM AI Copilot |
 | :--- | :--- | :--- |
 | **Cost** | Additional $30–$50+ per user per month. | **Included natively** (Zero software license markup). |
 | **LLM Flexibility** | Tied to ServiceNow cloud LLM or OpenAI Azure. | **Vendor-Agnostic:** Integrates with any internal or external LLM API (OpenAI, Claude, Ollama, vLLM). |
@@ -221,7 +221,7 @@ The following model compares a typical enterprise deployment of **250 Support Fu
 
 ```
 ┌───────────────────────────────────────────────┬──────────────────┬─────────────────┐
-│ Expense Category                              │ ServiceNow Ent.  │ Nexus ITSM Core │
+│ Expense Category                              │ ServiceNow Ent.  │ Genwizard ITSM Core │
 ├───────────────────────────────────────────────┼──────────────────┼─────────────────┤
 │ Fulfiller Licenses (250 users @ $125/mo)      │ $1,125,000       │ $0              │
 │ Requester / Employee Center Pro Tier          │ $180,000         │ $0              │
@@ -233,7 +233,7 @@ The following model compares a typical enterprise deployment of **250 Support Fu
 ├───────────────────────────────────────────────┼──────────────────┼─────────────────┤
 │ TOTAL 3-YEAR EXPENDITURE                      │ $2,205,000       │ $43,000         │
 ├───────────────────────────────────────────────┴──────────────────┴─────────────────┤
-│ NET 3-YEAR CASH SAVINGS WITH NEXUS ITSM:                 $2,162,000 (98.0% Savings)│
+│ NET 3-YEAR CASH SAVINGS WITH GENWIZARD ITSM:                 $2,162,000 (98.0% Savings)│
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -246,7 +246,7 @@ The following model compares a typical enterprise deployment of **250 Support Fu
 
 ## 6. Security, Compliance & Governance Architecture
 
-Nexus ITSM meets strict enterprise security, risk management, and compliance mandates:
+Genwizard ITSM meets strict enterprise security, risk management, and compliance mandates:
 
 1. **Non-Root Execution:** Container runs strictly as an unprivileged user (`app`, UID `10001`), adhering to CIS Docker Benchmarks and Kubernetes Pod Security Standards.
 2. **Path Traversal & Attachment Security:** Secure attachment pipeline enforces strict 15MB file size limits, extension whitelisting, and regex path sanitization.
@@ -260,7 +260,7 @@ Nexus ITSM meets strict enterprise security, risk management, and compliance man
 
 ## 7. Zero-Disruption Adoption & Migration Strategy
 
-Adopting Nexus ITSM does **not** require a risky "big-bang" cutover:
+Adopting Genwizard ITSM does **not** require a risky "big-bang" cutover:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -291,7 +291,7 @@ Adopting Nexus ITSM does **not** require a risky "big-bang" cutover:
 
 ## 8. Summary Conclusion for Leadership
 
-| Strategic Objective | ServiceNow | Nexus ITSM Core |
+| Strategic Objective | ServiceNow | Genwizard ITSM Core |
 | :--- | :---: | :---: |
 | **Eliminate Multi-Million Dollar SaaS License Drain** | ❌ | ✅ **Achieved (100% Owned IP)** |
 | **Instant Integration with Existing NGINX & Containers** | ❌ (Heavy MID Server) | ✅ **Achieved (Subpath `/itsm/`)** |

@@ -659,7 +659,7 @@ function updateNavVisibilityForRole() {
   // Update top brand badge in sidebar
   const sidebarPortalName = document.getElementById('sidebarPortalName');
   if (sidebarPortalName) {
-    sidebarPortalName.textContent = projName || 'Nexus ITSM';
+    sidebarPortalName.textContent = projName || 'Genwizard ITSM';
   }
 
   // Update Operations heading
@@ -10291,7 +10291,7 @@ function renderIdentityTabContent(users, customGroups, adMappings, ssoConfigs, p
                 <i data-lucide="external-link" class="w-4 h-4"></i>
                 <span>Open SSO Redirect Flow</span>
               </a>
-              <a href="${API_BASE}/id/sso/metadata.xml" download="nexus-itsm-sp-metadata.xml" class="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-lg">
+              <a href="${API_BASE}/id/sso/metadata.xml" download="genwizard-itsm-sp-metadata.xml" class="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-lg">
                 <i data-lucide="download" class="w-4 h-4"></i>
                 <span>Download SP XML</span>
               </a>

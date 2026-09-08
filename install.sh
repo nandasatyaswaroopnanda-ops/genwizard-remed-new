@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Nexus ITSM Enterprise Production Installer
+# Genwizard ITSM Enterprise Production Installer
 # Supports single-node VM / Docker Compose deployment with modular microservices:
 # - Nginx Gateway (:80)
 # - Core ITSM Backend (:8000)
@@ -205,7 +205,7 @@ fi
 cat <<EOF
 
 ================================================================================
-           NEXUS ITSM ENTERPRISE PLATFORM INSTALLED SUCCESSFULLY
+           GENWIZARD ITSM ENTERPRISE PLATFORM INSTALLED SUCCESSFULLY
 ================================================================================
 Platform URL:             ${APP_URL}
 Edge Nginx (Redirects):   http://127.0.0.1:80 (or ${APP_URL})

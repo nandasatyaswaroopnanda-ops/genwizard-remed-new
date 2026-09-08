@@ -1,5 +1,5 @@
 # ==============================================================================
-# Nexus ITSM — Edge Nginx Reverse Proxy & Redirect Manager
+# Genwizard ITSM — Edge Nginx Reverse Proxy & Redirect Manager
 # Handles edge entrypoint, domain validation, SSL/HTTP redirects, and
 # forwards clean application traffic downstream to the internal API Gateway.
 # ==============================================================================

@@ -1,4 +1,4 @@
-"""Nexus ITSM — Enterprise Identity Management Service."""
+"""Genwizard ITSM — Enterprise Identity Management Service."""
 import os
 import re
 import json
@@ -33,7 +33,7 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="Nexus ITSM — Enterprise Identity Management Service",
+    title="Genwizard ITSM — Enterprise Identity Management Service",
     description="Dedicated microservice for Local Authentication, Roles & Custom Groups, Active Directory Mapping, and B2B/B2C SSO with SAML 2.0 Metadata.",
     version="1.0.0",
     docs_url="/docs",
@@ -1410,7 +1410,7 @@ def get_saml_sp_metadata():
         content=xml_content.strip(),
         media_type="application/xml",
         headers={
-            "Content-Disposition": 'attachment; filename="nexus-itsm-sp-metadata.xml"'
+            "Content-Disposition": 'attachment; filename="genwizard-itsm-sp-metadata.xml"'
         }
     )
 

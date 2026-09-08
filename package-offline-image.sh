@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Build & Export Nexus ITSM Docker Image for Air-Gapped / Offline Environments
+# Build & Export Genwizard ITSM Docker Image for Air-Gapped / Offline Environments
 # ==============================================================================
 set -euo pipefail
 

@@ -384,7 +384,7 @@ def test_sso_redirect_static_route(client):
     resp = client.get("/sso-redirect.html")
     assert resp.status_code == 200
     assert "text/html" in resp.headers.get("content-type", "")
-    assert "Opening Nexus ITSM..." in resp.text
+    assert "Opening Genwizard ITSM..." in resp.text
     assert "Enterprise IdP" in resp.text
 
 

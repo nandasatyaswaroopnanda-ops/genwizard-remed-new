@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Nexus ITSM — Package Minimal Add-On for Existing Application Stack
+# Genwizard ITSM — Package Minimal Add-On for Existing Application Stack
 # ==============================================================================
 # Packages ONLY the runtime files required to install and run nexus-itsm-core
 # alongside an existing enterprise stack. Excludes tests, docs, dev files, etc.

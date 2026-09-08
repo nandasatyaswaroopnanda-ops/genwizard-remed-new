@@ -1,5 +1,5 @@
 // ==============================================================================
-// Nexus ITSM — Native mongosh Seed Script for Identity Management & atr-mongo
+// Genwizard ITSM — Native mongosh Seed Script for Identity Management & atr-mongo
 // ==============================================================================
 // Usage:
 //   docker exec -i atr-mongo mongosh -u atr -p <password> --authenticationDatabase admin < scripts/seed_im_mongo.js

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Nexus ITSM Core — Turnkey Deployment onto Existing Application Stack
+# Genwizard ITSM Core — Turnkey Deployment onto Existing Application Stack
 # ==============================================================================
 # Integrates nexus-itsm-core with:
 #   - atr-mongo (MongoDB, user 'atr')
