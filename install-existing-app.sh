@@ -11,6 +11,7 @@
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${APP_DIR}"
 ITSM_HOST_PORT="${ITSM_HOST_PORT:-8000}"
 CONSUL_ADDR="${CONSUL_HTTP_ADDR:-http://consul:8500}"
 MONGO_DATABASE="${MONGO_DATABASE:-nexus_itsm}"
@@ -164,10 +165,19 @@ fi
 echo "==> Starting Genwizard ITSM Core container on network '${DOCKER_NETWORK}'..."
 COMPOSE_OK=false
 
-if docker compose -f "$APP_DIR/docker-compose.existing-app-addon.yml" up -d --build 2>&1; then
-  COMPOSE_OK=true
-elif command -v docker-compose >/dev/null 2>&1 && docker-compose -f "$APP_DIR/docker-compose.existing-app-addon.yml" up -d --build 2>&1; then
-  COMPOSE_OK=true
+if docker image inspect nexus-itsm-core:latest >/dev/null 2>&1; then
+  echo "  ✓ Detected nexus-itsm-core:latest in local daemon. Starting container..."
+  if docker compose -f "$APP_DIR/docker-compose.existing-app-addon.yml" up -d 2>&1; then
+    COMPOSE_OK=true
+  fi
+fi
+
+if [[ "$COMPOSE_OK" != "true" ]]; then
+  if docker compose -f "$APP_DIR/docker-compose.existing-app-addon.yml" up -d --build 2>&1; then
+    COMPOSE_OK=true
+  elif command -v docker-compose >/dev/null 2>&1 && docker-compose -f "$APP_DIR/docker-compose.existing-app-addon.yml" up -d --build 2>&1; then
+    COMPOSE_OK=true
+  fi
 fi
 
 # Resilient fallback: direct docker run on verified network with host-gateway and volume

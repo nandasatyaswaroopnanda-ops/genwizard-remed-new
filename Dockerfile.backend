@@ -20,7 +20,6 @@ COPY --chown=app:app backend ./backend
 COPY --chown=app:app frontend ./frontend
 COPY --chown=app:app identity_service ./identity_service
 COPY --chown=app:app scripts ./scripts
-COPY --chown=app:app README.md ./
 
 USER app
 

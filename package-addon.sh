@@ -22,24 +22,24 @@ chmod +x install-existing-app.sh scripts/bootstrap_external_im.py
 STAGE_DIR=$(mktemp -d /tmp/nexus-itsm-stage.XXXXXX)
 trap 'rm -rf "${STAGE_DIR}"' EXIT
 
-mkdir -p "${STAGE_DIR}/scripts"
-
 # Copy ONLY runtime components
 cp -r backend "${STAGE_DIR}/"
 cp -r frontend "${STAGE_DIR}/"
 cp -r identity_service "${STAGE_DIR}/"
-cp scripts/bootstrap_external_im.py "${STAGE_DIR}/scripts/"
-cp scripts/seed_im_mongo.js "${STAGE_DIR}/scripts/"
+cp -r scripts "${STAGE_DIR}/"
 cp Dockerfile "${STAGE_DIR}/"
 cp requirements.txt "${STAGE_DIR}/"
 cp docker-compose.existing-app-addon.yml "${STAGE_DIR}/"
 cp install-existing-app.sh "${STAGE_DIR}/"
+cp README.md "${STAGE_DIR}/" 2>/dev/null || true
+cp .dockerignore "${STAGE_DIR}/" 2>/dev/null || true
 
 # Clean any python bytecode, DS_Store, or non-runtime files inside the stage
 find "${STAGE_DIR}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 find "${STAGE_DIR}" -type f -name "*.pyc" -delete 2>/dev/null || true
 find "${STAGE_DIR}" -type f -name ".DS_Store" -delete 2>/dev/null || true
 rm -f "${STAGE_DIR}/identity_service/Dockerfile" 2>/dev/null || true
+rm -f "${STAGE_DIR}/scripts/security-scan.sh" 2>/dev/null || true
 rm -rf "${STAGE_DIR}/frontend/static" 2>/dev/null || true
 
 # Archive strictly the staged files
